@@ -48,6 +48,9 @@ li .btn.u{background:#F6EDE4;opacity:.55;padding:7px 9px}li .btn.u.on{background
 li .btn.x{background:none;color:#B49A84;font-size:20px;padding:4px 8px}
 li input.edit{flex:1;font:inherit;font-size:18px;padding:6px 8px;border:2px solid var(--pink2);border-radius:10px;background:#fff;color:var(--ink)}
 .empty{color:var(--soft);padding:14px 6px}
+.cleardone{display:flex;justify-content:flex-end;margin-top:8px}
+.soft{border:0;border-radius:999px;padding:7px 14px;font:600 14px Fredoka,sans-serif;cursor:pointer;background:#E3F3E6;color:#3E8E5A}
+.soft:hover{background:#D2ECD8}
 .add{display:flex;gap:10px;margin-top:16px}
 .add input{flex:1;min-width:0;font:500 17px Fredoka,sans-serif;padding:12px 14px;border:2px solid #EADBC8;border-radius:14px;background:#fff;color:var(--ink)}
 .add input:focus{outline:none;border-color:var(--pink2)}
@@ -268,6 +271,14 @@ function toggleDone(i) {
 }
 function focusTask(i) { mutate((t, st) => { if (!t[i] || t[i].done) return false; st.current = st.current === i ? -1 : i; }, mine && mine.current === i ? "stopped focusing" : "focusing ♡"); }
 function urgentTask(i) { const was = mine && mine.tasks[i] && mine.tasks[i].urgent; mutate(t => { if (!t[i] || t[i].done) return false; t[i].urgent = !t[i].urgent; }, was ? "not urgent anymore" : "marked urgent ❗"); }
+function clearDone() {   // like !cleardone on stream: removes finished tasks, keeps your focus on the right task
+  mutate((t, st) => {
+    const keep = t.map((x, i) => ({ x, i })).filter(e => !e.x.done);
+    if (keep.length === t.length) { toast("nothing to clear yet"); return false; }
+    const focus = keep.findIndex(e => e.i === st.current);
+    t.splice(0, t.length, ...keep.map(e => e.x)); st.current = focus;
+  }, "cleared your finished tasks ✨");
+}
 function delTask(i) { mutate((t, st) => { if (!t[i]) return false; t.splice(i, 1); if (st.current === i) st.current = -1; else if (st.current > i) st.current--; }, "crossed that off"); }
 function editTask(i, text) { text = text.trim().slice(0, 200); if (!text) { editing = -1; render(); return; } mutate(t => { if (!t[i]) return false; t[i].text = text; }, "saved"); }
 
@@ -299,12 +310,14 @@ function render() {
       <div class="head"><span class="nm">${esc(mine.display || mine.login)}</span><span class="pill">✓ ${mine.pearls_today || 0} today</span>
         ${cur >= 0 && t[cur] ? `<span class="pill pink">focusing on ${cur + 1}</span>` : ""}<button class="out" id="out">log out</button></div>
       <ol>${rows || `<div class="empty">your list is empty. add your first task below ♡</div>`}</ol>
+      ${t.some(x => x.done) ? `<div class="cleardone"><button class="soft" id="clearDone">✨ clear done (${t.filter(x => x.done).length})</button></div>` : ""}
       <form class="add" id="addForm"><input id="newTask" placeholder="add a task (use ; for several)" maxlength="400" autocomplete="off"><button class="big">add</button></form>
       <p class="hint">tap a task to rename it · ❗ marks it urgent · tap the circle when it's done · your ticket in the cafe updates within a few seconds</p>
     </div></div>`;
   app.insertAdjacentHTML("beforeend", passportHTML());
   const ck = $("checkin"); if (ck) ck.onclick = () => checkIn();
   $("out").onclick = () => sb.auth.signOut();
+  const cd = $("clearDone"); if (cd) cd.onclick = () => clearDone();
   $("addForm").onsubmit = e => { e.preventDefault(); const v = $("newTask").value; $("newTask").value = ""; addTasks(v); };
   app.querySelectorAll("[data-a]").forEach(el => el.onclick = () => {
     const i = +el.dataset.i, a = el.dataset.a;
