@@ -308,7 +308,7 @@ function render() {
         <button class="btn x" data-a="del" data-i="${i}" aria-label="delete">×</button></li>`).join("");
   app.innerHTML = `<div class="card ticket"><span class="clip"></span><div class="paper">
       <div class="head"><span class="nm">${esc(mine.display || mine.login)}</span><span class="pill">✓ ${mine.pearls_today || 0} today</span>
-        ${cur >= 0 && t[cur] ? `<span class="pill pink">focusing on ${cur + 1}</span>` : ""}<button class="out" id="out">log out</button></div>
+        ${(() => { const left = t.filter(x => !x.done).length; return t.length ? `<span class="pill pink">${left ? `${left} ${left === 1 ? "task" : "tasks"} remaining` : "all done ✨"}</span>` : ""; })()}<button class="out" id="out">log out</button></div>
       <ol>${rows || `<div class="empty">your list is empty. add your first task below ♡</div>`}</ol>
       ${t.some(x => x.done) ? `<div class="cleardone"><button class="soft" id="clearDone">✨ clear done (${t.filter(x => x.done).length})</button></div>` : ""}
       <form class="add" id="addForm"><input id="newTask" placeholder="add a task (use ; for several)" maxlength="400" autocomplete="off"><button class="big">add</button></form>
