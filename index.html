@@ -18,6 +18,12 @@ main{max-width:760px;margin:0 auto;padding:22px 16px 60px}
 .board p{margin:0;color:#EAD9C0;font-size:16px}
 .board p b{color:#F7B6C8;font-weight:600}
 .card{margin-top:22px}
+.twbar{display:flex;align-items:center;gap:12px;margin-top:16px;padding:10px 12px 10px 16px;border-radius:16px;background:#F3EAFF;color:#4B2A82;text-decoration:none;box-shadow:0 4px 0 rgba(0,0,0,.25),inset 0 0 0 2px #D9C5FB;font:500 16px Fredoka,sans-serif}
+.twbar:hover{background:#ECDFFF}
+.twdot{width:10px;height:10px;border-radius:50%;background:#B9A6D6;flex:none}
+.twbar.live .twdot{background:#3FBF6A;box-shadow:0 0 0 3px #CFF0DA;animation:onair 1.6s ease-in-out infinite}
+.twtxt{flex:1;min-width:0}
+.twbtn{flex:none;background:#9146FF;color:#fff;border-radius:12px;padding:8px 14px;font-weight:600;box-shadow:0 3px 0 #6A2FD0}
 .ticket{position:relative;filter:drop-shadow(0 5px 0 rgba(0,0,0,.3))}
 .ticket .clip{position:absolute;left:50%;top:-9px;width:46px;height:18px;margin-left:-23px;border-radius:5px;background:#C79A68;z-index:2;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
 .paper{background:var(--paper);padding:20px 20px 30px;
@@ -109,6 +115,7 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .radio .feet{display:flex;justify-content:space-between;padding:0 36px}.radio .feet i{width:26px;height:8px;border-radius:0 0 8px 8px;background:#D97A9A}
 @media (max-width:420px){.radio .grille{display:none}.radio .handle{width:80px;right:40px}}
 main{padding-bottom:110px}
+#ver{text-align:center;color:#8C6E55;font:500 12px Fredoka,sans-serif;padding:0 0 120px;opacity:.7}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);opacity:0;transition:.3s;background:var(--wood2);color:var(--cream);padding:10px 18px;border-radius:999px;font-weight:500;z-index:9}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .demo{background:#FFE3A1;color:#5A3826;border-radius:12px;padding:8px 12px;margin-top:14px;font-size:14px;text-align:center}
@@ -122,6 +129,7 @@ main{padding-bottom:110px}
     <div class="line"></div>
     <p>your task ticket, open even when the stream isn't ♡ changes show up on your ticket in the cafe</p>
   </div>
+  <a class="twbar" id="twbar" target="_blank" rel="noopener"><span class="twdot"></span><span class="twtxt" id="twtxt">miss boba's cafe is also on twitch ♡ come co-work with us</span><span class="twbtn">visit on twitch</span></a>
   <div id="demoNote"></div>
   <div id="app"><div class="note"><h2>opening the cafe…</h2><p>one moment ♡</p></div></div>
   <div id="guestbook"></div>
@@ -136,12 +144,14 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
+<div id="ver">cafe website · version 11/02 d</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
 const SUPABASE_URL = "https://gednciiobqwcocobsgim.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlZG5jaWlvYnF3Y29jb2JzZ2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MTk3NDUsImV4cCI6MjEwOTE5NTc0NX0.Nh5kkIWbKkjwVxSuCVJzMVuGn-M6IQPbZMqUNp3pf6s";     // the "anon public" key (safe to put on a website)
 const MAX_TASKS = 40;
+const TWITCH_URL = "https://www.twitch.tv/lilmissboba";
 const YT_PLAYLIST = "PLAT_XughQA_w";      // your youtube playlist (the part after list= in the link)
 const CAFE_TIMEZONE = "Asia/Singapore";   // check-ins reset at midnight here (same as the cafe)
 const CARD_SIZE = 10;                      // stamps per boba passport
@@ -329,6 +339,9 @@ function render() {
 async function renderOthers() {   // when the stream's on: everyone in the cafe right now. otherwise: recent tickets
   const { data: beat } = await sb.from("cafe_lists").select("updated_at").eq("login", "__cafe__").maybeSingle();
   const open = beat && Date.now() - Date.parse(beat.updated_at) < 3 * 60000;
+  $("twbar").classList.toggle("live", !!open);
+  $("twtxt").textContent = open ? "the cafe is open right now! come co-work with us on twitch ♡" : "miss boba's cafe is also on twitch ♡ come co-work with us";
+  document.querySelector("#twbar .twbtn").textContent = open ? "join on twitch" : "visit on twitch";
   let q = sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,updated_at,in_cafe,status");
   q = open ? q.eq("in_cafe", true).limit(80) : q.order("updated_at", { ascending: false }).limit(120);
   const { data } = await q;
@@ -357,6 +370,7 @@ async function bootInner() {
   render(); renderOthers().catch(console.error); renderGuestbook().catch(console.error);
 }
 
+$("twbar").href = TWITCH_URL;
 /* ---------- cafe radio ---------- */
 (() => {
   const r = $("radio"), btn = $("radioBtn");
