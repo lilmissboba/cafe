@@ -144,7 +144,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/02 d</div>
+<div id="ver">cafe website · version 11/02 e</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -344,12 +344,19 @@ async function renderOthers() {   // when the stream's on: everyone in the cafe 
   document.querySelector("#twbar .twbtn").textContent = open ? "join on twitch" : "visit on twitch";
   let q = sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,updated_at,in_cafe,status");
   q = open ? q.eq("in_cafe", true).limit(80) : q.order("updated_at", { ascending: false }).limit(120);
-  const { data } = await q;
+  let { data, error } = await q;
+  let live = open;
+  if (error) {   // the "who's in the cafe" columns aren't in the database yet: show recent tickets instead of nothing
+    console.warn("in-the-cafe columns missing, run the latest supabase-setup.sql", error);
+    ({ data } = await sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,updated_at").order("updated_at", { ascending: false }).limit(120));
+    live = false;
+  }
   let list = (data || []).filter(r => r.login !== "__cafe__" && (!mine || r.login !== mine.login));
-  if (!open) list = list.filter(r => (r.tasks || []).some(t => !t.done)).slice(0, 24);
+  if (!live) list = list.filter(r => (r.tasks || []).some(t => !t.done)).slice(0, 24);
   else list.sort((a, b) => (a.status === "lurking") - (b.status === "lurking") || (a.display || a.login).localeCompare(b.display || b.login));
-  $("othersTitle").hidden = !list.length;
-  $("othersTitle").textContent = open ? `in the cafe right now · ${list.length}` : "recent tickets";
+  $("othersTitle").hidden = false;
+  $("othersTitle").textContent = live ? `in the cafe right now · ${list.length}` : "recent tickets";
+  if (!list.length) { $("others").innerHTML = `<p class="hint" style="color:#EAD9C0">${live ? "nobody else is in the cafe right now ♡" : "no open tickets right now ♡"}</p>`; return; }
   $("others").innerHTML = list.map(r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current;
     const body = r.status === "lurking" ? `<li>☕ cozy lurking by the window</li>` : t.length ? t.slice(0, 6).map((x, i) => `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${cur === i ? " ★" : ""}</li>`).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
     return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span></div><ul>${body}</ul></div></div>`; }).join("");
