@@ -76,6 +76,12 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .mini ul li{padding:2px 0;display:block;border-radius:0}
 .mini ul li.done{text-decoration:line-through;color:#A8937F}
 .mini ul li.focus{color:var(--pink);font-weight:600}
+.reps{margin-top:24px;background:var(--cream);border-radius:18px;padding:14px 16px;box-shadow:0 5px 0 rgba(0,0,0,.3),inset 0 0 0 2px #E3F3E6}
+.reps .rhd{font:700 26px/1 Gaegu,cursive;color:#3E8E5A;margin:2px 4px 8px}.reps .rhd span{font:600 13px Fredoka,sans-serif;color:var(--soft);margin-left:6px}
+.rlist{list-style:none;margin:0;padding:0}.rlist li{display:flex;align-items:center;gap:10px;padding:6px 4px;border-bottom:1.5px dashed #EADBC8}
+.rlist .rt{flex:1;min-width:0;font-size:17px;overflow-wrap:anywhere}.rlist .rw{font:600 13px Fredoka,sans-serif;color:#3E8E5A;background:#E3F3E6;border-radius:999px;padding:3px 10px;flex:none}
+.radd{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.radd input,.radd select{font:500 15px Fredoka,sans-serif;padding:10px 12px;border:2px solid #EADBC8;border-radius:12px;background:#fff;color:var(--ink)}
+.radd #repText{flex:1 1 200px;min-width:0}.radd .big{padding:10px 16px;font-size:16px}
 .passport{margin-top:26px;background:#F7A8C4;border-radius:22px;padding:9px;box-shadow:0 6px 0 rgba(0,0,0,.3)}
 .passport .pin{background:var(--cream);border-radius:15px;padding:16px 18px 14px;outline:2px dashed #F2C3D2;outline-offset:-7px}
 .passport .ph{display:flex;align-items:center;gap:10px;padding:0 4px 10px;border-bottom:2px dashed #F2D6DF}
@@ -144,13 +150,14 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/02 e</div>
+<div id="ver">cafe website · version 11/02 f</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
 const SUPABASE_URL = "https://gednciiobqwcocobsgim.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlZG5jaWlvYnF3Y29jb2JzZ2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MTk3NDUsImV4cCI6MjEwOTE5NTc0NX0.Nh5kkIWbKkjwVxSuCVJzMVuGn-M6IQPbZMqUNp3pf6s";     // the "anon public" key (safe to put on a website)
 const MAX_TASKS = 40;
+const MAX_REPEATS = 5, MAX_REPEATS_HOST = 10, HOST = "lilmissboba";   // same limits as the cafe
 const TWITCH_URL = "https://www.twitch.tv/lilmissboba";
 const YT_PLAYLIST = "PLAT_XughQA_w";      // your youtube playlist (the part after list= in the link)
 const CAFE_TIMEZONE = "Asia/Singapore";   // check-ins reset at midnight here (same as the cafe)
@@ -168,9 +175,10 @@ function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add(
 function demoClient() {
   const rows = {
     lilmissboba: { login: "lilmissboba", twitch_id: "1", display: "lilmissboba", tasks: [{ text: "stream setup", done: true }, { text: "edit vod", done: false }, { text: "walk ashe", done: false }], current: 1, pearls_today: 1 },
-    kyayu_: { login: "kyayu_", twitch_id: "2", display: "kyayu_", tasks: [{ text: "study for exam", done: false }, { text: "laundry", done: false, urgent: true }, { text: "dinner", done: true }, { text: "stretch", done: false, daily: true }], current: 0, pearls_today: 3 },
+    kyayu_: { login: "kyayu_", twitch_id: "2", display: "kyayu_", tasks: [{ text: "study for exam", done: false }, { text: "laundry", done: false, urgent: true }, { text: "dinner", done: true }, { text: "stretch", done: false, repeat: true }], current: 0, pearls_today: 3 },
     pearlpanda: { login: "pearlpanda", twitch_id: "3", display: "pearlpanda", tasks: [{ text: "read 20 pages", done: false }, { text: "email boss", done: true }], current: 0, pearls_today: 5 },
   };
+  rows.kyayu_.repeats = [{ time: "09:00", text: "stretch", last: "", tz: "Asia/Singapore", tzLabel: "SGT" }, { time: "00:00", text: "pay rent", monthDay: 15, last: "" }];
   rows.kyayu_.checkin = { total: 14, stamps: 4, cards: 1, streak: 3, last: "2000-01-01", display: "kyayu_" };
   rows.pearlpanda.gb_msg = "love this cafe so much ♡"; rows.pearlpanda.gb_signed_at = new Date(Date.now() - 86400000).toISOString();
   rows.lilmissboba.gb_msg = ""; rows.lilmissboba.gb_signed_at = new Date(Date.now() - 2 * 86400000).toISOString();
@@ -220,6 +228,70 @@ async function mutateRow(patchFor, okMsg) {   // read the latest, change it, sav
 }
 function mutate(change, okMsg) {
   return mutateRow(row => { const tasks = row.tasks || [], st = { current: row.current == null ? -1 : row.current }; if (change(tasks, st) === false) return null; return { tasks, current: st.current }; }, okMsg);
+}
+/* ---------- repeating tasks (like !repeat and !monthly on stream) ---------- */
+const MY_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || CAFE_TIMEZONE;
+const TZ_NAMES = { "Asia/Singapore": "SGT", "Asia/Kuala_Lumpur": "MYT", "Asia/Manila": "PHT", "Asia/Taipei": "TST", "Asia/Hong_Kong": "HKT", "Asia/Tokyo": "JST", "Asia/Seoul": "KST", "Asia/Jakarta": "WIB", "Asia/Bangkok": "ICT", "Australia/Sydney": "AEST", "Europe/London": "UK time" };
+const tzShort = tz => { if (TZ_NAMES[tz]) return TZ_NAMES[tz]; try { return new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" }).formatToParts(new Date()).find(p => p.type === "timeZoneName").value; } catch (e) { return ""; } };
+function zonedNow(tz) { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).forEach(x => p[x.type] = x.value); return { day: `${p.year}-${p.month}-${p.day}`, mins: +p.hour * 60 + +p.minute }; }
+const toMins = t => { const [h, m] = (t || "00:00").split(":").map(Number); return h * 60 + m; };
+function isMonthDay(r, day) { const [y, m, d] = day.split("-").map(Number), last = new Date(Date.UTC(y, m, 0)).getUTCDate(); return d === (r.monthDay === "last" ? last : Math.min(r.monthDay, last)); }
+const ord = n => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
+const niceTime = t => { let [h, m] = t.split(":").map(Number); const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return m ? `${h}:${String(m).padStart(2, "0")}${ap}` : `${h}${ap}`; };
+function repeatWhen(r) {
+  const day = r.monthDay ? `monthly on the ${r.monthDay === "last" ? "last day" : ord(+r.monthDay)}` : "every day";
+  if (r.monthDay && r.time === "00:00" && !r.tz) return day;
+  return `${day} at ${niceTime(r.time)}${r.tzLabel ? " " + r.tzLabel : r.tz ? "" : " SGT"}`;
+}
+function addDue(row) {   // adds any repeating tasks that are due today (the same rules the cafe uses), returns true if anything changed
+  const reps = row.repeats || [], tasks = row.tasks || (row.tasks = []); let changed = false;
+  for (const r of reps) {
+    const now = zonedNow(r.tz || CAFE_TIMEZONE);
+    if (r.monthDay && !isMonthDay(r, now.day)) continue;
+    if (r.last === now.day || now.mins < toMins(r.time)) continue;
+    r.last = now.day; changed = true;
+    const same = tasks.find(x => x.repeat && x.text === r.text);
+    if (same && !same.done) continue;
+    const twin = tasks.find(x => !x.repeat && !x.done && x.text.toLowerCase() === r.text.toLowerCase());
+    if (twin && !same) { twin.repeat = true; continue; }
+    if (!tasks.some(x => !x.done)) { const keep = tasks.filter(x => x.repeat); tasks.length = 0; tasks.push(...keep); row.current = -1; }   // everything was finished: tidy up for the new day
+    if (same) same.done = false; else if (tasks.length < MAX_TASKS) tasks.push({ text: r.text, done: false, repeat: true, addedAt: Date.now() });
+  }
+  return changed;
+}
+async function addDueRepeats() {
+  if (!mine || !(mine.repeats || []).length) return;
+  const peek = JSON.parse(JSON.stringify(mine)); if (!addDue(peek)) return;   // nothing due: don't save anything
+  await mutateRow(row => addDue(row) ? { tasks: row.tasks, current: row.current == null ? -1 : row.current, repeats: row.repeats } : null);
+}
+let repForm = { type: "daily", day: "1" };
+function addRepeat(text, time, type, day) {
+  text = text.trim().slice(0, 80); if (!text) { toast("type what the task is first"); return; }
+  const max = mine.login === HOST ? MAX_REPEATS_HOST : MAX_REPEATS;
+  mutateRow(row => {
+    const reps = row.repeats || [];
+    if (reps.length >= max) { toast(`max ${max} repeating tasks, remove one first`); return null; }
+    const r = { time: time || "09:00", text, tz: MY_TZ, tzLabel: tzShort(MY_TZ), last: "" };
+    if (type === "monthly") r.monthDay = day === "last" ? "last" : +day;
+    const now = zonedNow(r.tz);   // like the cafe: if today's time already passed, it starts next time
+    if ((!r.monthDay || isMonthDay(r, now.day)) && now.mins >= toMins(r.time)) r.last = now.day;
+    reps.push(r);
+    return { repeats: reps };
+  }, type === "monthly" ? "monthly task added ↻" : "daily task added ↻");
+}
+function removeRepeat(i) { mutateRow(row => { const reps = row.repeats || []; if (!reps[i]) return null; reps.splice(i, 1); return { repeats: reps }; }, "repeating task removed"); }
+function repeatsHTML() {
+  const reps = mine.repeats || [], max = mine.login === HOST ? MAX_REPEATS_HOST : MAX_REPEATS;
+  return `<div class="card reps"><div class="rhd">↻ repeating tasks <span>${reps.length}/${max}</span></div>
+    ${reps.length ? `<ul class="rlist">${reps.map((r, i) => `<li><span class="rt">${esc(r.text)}</span><span class="rw">${esc(repeatWhen(r))}</span><button class="btn x" data-r="${i}" aria-label="remove">×</button></li>`).join("")}</ul>` : `<p class="empty">no repeating tasks yet. add one below and it'll pop onto your list by itself ♡</p>`}
+    ${reps.length < max ? `<form class="radd" id="repForm">
+      <input id="repText" maxlength="80" placeholder="task, like stretch or pay rent" autocomplete="off">
+      <select id="repType"><option value="daily">every day</option><option value="monthly" ${repForm.type === "monthly" ? "selected" : ""}>every month</option></select>
+      <select id="repDay" ${repForm.type === "monthly" ? "" : "hidden"}>${Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}" ${repForm.day == k + 1 ? "selected" : ""}>on the ${ord(k + 1)}</option>`).join("")}<option value="last" ${repForm.day === "last" ? "selected" : ""}>on the last day</option></select>
+      <input id="repTime" type="time" value="09:00" aria-label="time">
+      <button class="big">add</button></form>
+      <p class="hint">times are in your time zone (${esc(tzShort(MY_TZ) || MY_TZ)}). it pops onto your list at that time, even when the stream is off.</p>` : ""}
+  </div>`;
 }
 /* ---------- daily check-in (boba passport) and the guestbook ---------- */
 function cafeDay(d = new Date()) { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: CAFE_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).forEach(x => p[x.type] = x.value); return `${p.year}-${p.month}-${p.day}`; }
@@ -313,7 +385,7 @@ function render() {
     : `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}"><span class="no">${i + 1}</span>
         <button class="chk" data-a="done" data-i="${i}" aria-label="${x.done ? "mark not done" : "mark done"}">${x.done ? "✓" : ""}</button>
         <span class="tx" data-a="edit" data-i="${i}" title="click to edit">${esc(x.text)}</span>
-        ${x.daily ? `<span class="tag daily">daily</span>` : ""}${cur === i ? `<span class="tag">focusing</span>` : ""}
+        ${x.repeat || x.daily ? `<span class="tag daily">↻ repeat</span>` : ""}${cur === i ? `<span class="tag">focusing</span>` : ""}
         ${x.done ? "" : `<button class="btn u ${x.urgent ? "on" : ""}" data-a="urgent" data-i="${i}" title="${x.urgent ? "not urgent" : "mark urgent"}" aria-label="${x.urgent ? "not urgent" : "mark urgent"}">❗</button><button class="btn f" data-a="focus" data-i="${i}">${cur === i ? "unfocus" : "focus"}</button>`}
         <button class="btn x" data-a="del" data-i="${i}" aria-label="delete">×</button></li>`).join("");
   app.innerHTML = `<div class="card ticket"><span class="clip"></span><div class="paper">
@@ -324,6 +396,14 @@ function render() {
       <form class="add" id="addForm"><input id="newTask" placeholder="add a task (use ; for several)" maxlength="400" autocomplete="off"><button class="big">add</button></form>
       <p class="hint">tap a task to rename it · ❗ marks it urgent · tap the circle when it's done · your ticket in the cafe updates within a few seconds</p>
     </div></div>`;
+  app.insertAdjacentHTML("beforeend", repeatsHTML());
+  app.querySelectorAll("[data-r]").forEach(b => b.onclick = () => removeRepeat(+b.dataset.r));
+  const rf = $("repForm");
+  if (rf) {
+    $("repType").onchange = () => { repForm.type = $("repType").value; $("repDay").hidden = repForm.type !== "monthly"; };
+    $("repDay").onchange = () => { repForm.day = $("repDay").value; };
+    rf.onsubmit = e => { e.preventDefault(); addRepeat($("repText").value, $("repTime").value, $("repType").value, $("repDay").value); };
+  }
   app.insertAdjacentHTML("beforeend", passportHTML());
   const ck = $("checkin"); if (ck) ck.onclick = () => checkIn();
   $("out").onclick = () => sb.auth.signOut();
@@ -374,6 +454,7 @@ async function bootInner() {
   const s = data && data.session;
   me = s ? { id: String(s.user.user_metadata.provider_id || s.user.user_metadata.sub || ""), name: s.user.user_metadata.nickname || s.user.user_metadata.name || "" } : null;
   mine = me ? await loadMine() : null;
+  if (mine) await addDueRepeats();
   render(); renderOthers().catch(console.error); renderGuestbook().catch(console.error);
 }
 
@@ -394,7 +475,8 @@ $("twbar").href = TWITCH_URL;
   if (DEMO) { sb = demoClient(); $("demoNote").innerHTML = `<div class="demo">demo mode: try it out with pretend data ♡ (nothing is saved)</div>`; }
   else { const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); sb.auth.onAuthStateChange(ev => { if (ev === "SIGNED_IN" || ev === "SIGNED_OUT") setTimeout(boot, 0); }); }
   await boot();
-  setInterval(async () => { if (me && editing < 0 && document.activeElement !== $("newTask")) { mine = await loadMine(); render(); } renderOthers(); }, 10000);   // picks up changes made in the cafe
+  setInterval(() => { if (me && mine) addDueRepeats(); }, 60000);   // repeating tasks pop on at their time while the page is open
+  setInterval(async () => { if (me && editing < 0 && document.activeElement !== $("newTask") && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#repForm"))) { mine = await loadMine(); render(); } renderOthers(); }, 10000);   // picks up changes made in the cafe
 })();
 </script>
 </body>
