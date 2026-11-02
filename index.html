@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>miss boba's cafe · your task ticket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Gaegu:wght@700&family=Huninn&display=swap" rel="stylesheet">
+<style>
+:root{--wood:#3A2419;--wood2:#4A2E1F;--cream:#FFF8EE;--paper:#FFF9EF;--ink:#4A2E1F;--soft:#8C6E55;--pink:#C85A78;--pink2:#F7A8C4;--blush:#FDE3EB;--board:#2E3B33;--chalk:#FBEFDD;--sage:#7FC198}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--wood);color:var(--ink);font-family:Fredoka,Huninn,"Noto Sans TC",system-ui,sans-serif}
+body{background:repeating-linear-gradient(90deg,#3A2419 0 120px,#40281C 120px 240px);padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+main{max-width:760px;margin:0 auto;padding:22px 16px 60px}
+.board{background:var(--board);border:10px solid #5A3826;border-radius:18px;padding:16px 18px 18px;text-align:center;box-shadow:0 5px 0 rgba(0,0,0,.3),inset 0 0 40px rgba(0,0,0,.35)}
+.board h1{margin:0;font:700 46px/1 Gaegu,cursive;color:var(--chalk)}
+.board .line{width:52%;height:2px;margin:10px auto 8px;background:#F2C98E;opacity:.7;border-radius:2px}
+.board p{margin:0;color:#EAD9C0;font-size:16px}
+.board p b{color:#F7B6C8;font-weight:600}
+.card{margin-top:22px}
+.ticket{position:relative;filter:drop-shadow(0 5px 0 rgba(0,0,0,.3))}
+.ticket .clip{position:absolute;left:50%;top:-9px;width:46px;height:18px;margin-left:-23px;border-radius:5px;background:#C79A68;z-index:2;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.paper{background:var(--paper);padding:20px 20px 30px;
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 10px) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/20px 10px repeat-x;
+          mask:linear-gradient(#000 0 0) top/100% calc(100% - 10px) no-repeat,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/20px 10px repeat-x}
+.head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:2px dashed #EADBC8}
+.head .nm{font:600 24px/1.1 Fredoka,sans-serif}
+.pill{font:600 14px Fredoka,sans-serif;border-radius:999px;padding:3px 10px;background:#E3F3E6;color:#3E8E5A}
+.pill.pink{background:var(--blush);color:var(--pink)}
+.head .out{margin-left:auto;font:500 13px Fredoka,sans-serif;color:var(--soft);background:none;border:0;cursor:pointer;text-decoration:underline}
+ol{list-style:none;margin:10px 0 0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:12px}
+li.focus{background:var(--blush)}
+li .no{width:22px;text-align:right;color:var(--soft);font-weight:600;flex:none}
+li .chk{width:28px;height:28px;flex:none;border-radius:50%;border:2.5px solid #D9C3A8;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;padding:0}
+li.done .chk{background:var(--sage);border-color:var(--sage)}
+li .tx{flex:1;min-width:0;font-size:18px;line-height:1.3;overflow-wrap:anywhere;cursor:text;border-radius:8px;padding:2px 4px}
+li .tx:hover{background:rgba(0,0,0,.04)}
+li.done .tx{text-decoration:line-through;color:#A8937F}
+li .tag{font:600 12px Fredoka,sans-serif;color:var(--pink);background:#fff;border-radius:999px;padding:2px 8px;flex:none}
+li .tag.daily{color:#3E8E5A;background:#E3F3E6}
+li .btn{flex:none;border:0;border-radius:10px;padding:7px 10px;font:600 14px Fredoka,sans-serif;cursor:pointer;background:#F3E6D8;color:var(--ink)}
+li .btn.f{background:var(--blush);color:var(--pink)}
+li .btn.x{background:none;color:#B49A84;font-size:20px;padding:4px 8px}
+li input.edit{flex:1;font:inherit;font-size:18px;padding:6px 8px;border:2px solid var(--pink2);border-radius:10px;background:#fff;color:var(--ink)}
+.empty{color:var(--soft);padding:14px 6px}
+.add{display:flex;gap:10px;margin-top:16px}
+.add input{flex:1;min-width:0;font:500 17px Fredoka,sans-serif;padding:12px 14px;border:2px solid #EADBC8;border-radius:14px;background:#fff;color:var(--ink)}
+.add input:focus{outline:none;border-color:var(--pink2)}
+.big{border:0;border-radius:14px;padding:12px 18px;font:600 17px Fredoka,sans-serif;cursor:pointer;background:var(--pink);color:#fff;box-shadow:0 3px 0 #A8455F}
+.big:active{transform:translateY(2px);box-shadow:0 1px 0 #A8455F}
+.big.twitch{background:#9146FF;box-shadow:0 3px 0 #6A2FD0;font-size:19px;padding:14px 22px}
+.hint{color:var(--soft);font-size:14px;margin:8px 2px 0}
+.center{text-align:center}
+.note{background:var(--cream);border-radius:16px;padding:22px;text-align:center;margin-top:22px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.note h2{margin:0 0 8px;font:700 30px/1.1 Gaegu,cursive;color:var(--pink)}
+.note p{margin:0 0 14px;color:var(--soft)}
+h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
+.others{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
+.mini .paper{padding:14px 14px 22px}
+.mini .nm{font:600 17px Fredoka,sans-serif}
+.mini ul{list-style:none;margin:8px 0 0;padding:0;font-size:15px}
+.mini ul li{padding:2px 0;display:block;border-radius:0}
+.mini ul li.done{text-decoration:line-through;color:#A8937F}
+.mini ul li.focus{color:var(--pink);font-weight:600}
+.passport{margin-top:26px;background:#F7A8C4;border-radius:22px;padding:9px;box-shadow:0 6px 0 rgba(0,0,0,.3)}
+.passport .pin{background:var(--cream);border-radius:15px;padding:16px 18px 14px;outline:2px dashed #F2C3D2;outline-offset:-7px}
+.passport .ph{display:flex;align-items:center;gap:10px;padding:0 4px 10px;border-bottom:2px dashed #F2D6DF}
+.passport .av{width:34px;height:34px;border-radius:50%;background:#E890AB;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;flex:none}
+.passport .pnm{font:600 22px Fredoka,sans-serif;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.passport .lb{font:600 13px Fredoka,sans-serif;color:var(--pink);background:#FDE3EB;border-radius:999px;padding:4px 10px}
+.passport .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px 0 8px;justify-items:center}
+.passport .slot{width:58px;height:58px;border-radius:50%;border:2.5px dashed #E8CBBE;display:flex;align-items:center;justify-content:center}
+.passport .slot.on{border:none;background:radial-gradient(circle at 50% 45%,#fff,#FCEFF3 70%);box-shadow:0 0 0 2.5px #F2C3D2 inset}
+.passport .pf{text-align:center;color:var(--soft);font-weight:500;margin-bottom:12px}.passport .pf b{color:var(--pink)}
+.big[disabled]{background:#E3F3E6;color:#3E8E5A;box-shadow:none;cursor:default}
+.gbcard{margin-top:28px;background:#FFF6E6;border-radius:20px;padding:16px 18px;box-shadow:0 6px 0 rgba(0,0,0,.3),inset 0 0 0 3px #E9DCCB}
+.gbtitle{font:700 32px/1.1 Gaegu,cursive;color:#5A3826;text-align:center;margin-bottom:10px}
+.gbsign{display:flex;gap:10px;margin-bottom:12px}.gbsign input{flex:1;min-width:0;font:500 16px Fredoka,sans-serif;padding:11px 14px;border:2px solid #EADBC8;border-radius:14px;background:#fff;color:var(--ink)}
+.gblist{background:#FFFDF8;border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;box-shadow:0 0 0 1.5px #EFE3D3}
+@media (max-width:560px){.gblist{grid-template-columns:1fr}.passport .slot{width:48px;height:48px}.passport .slot svg{width:34px;height:38px}}
+.gbe{display:flex;gap:8px;align-items:flex-start}.gbe b{font:600 17px Fredoka,sans-serif}.gbe small{display:block;color:var(--soft);font-size:14px;margin-top:2px;overflow-wrap:anywhere}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);opacity:0;transition:.3s;background:var(--wood2);color:var(--cream);padding:10px 18px;border-radius:999px;font-weight:500;z-index:9}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.demo{background:#FFE3A1;color:#5A3826;border-radius:12px;padding:8px 12px;margin-top:14px;font-size:14px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <div class="board">
+    <h1>miss boba's cafe</h1>
+    <div class="line"></div>
+    <p>your task ticket, open even when the stream isn't ♡ changes show up on your ticket in the cafe</p>
+  </div>
+  <div id="demoNote"></div>
+  <div id="app"></div>
+  <div id="guestbook"></div>
+  <h3 class="sec" id="othersTitle" hidden>in the cafe</h3>
+  <div class="others" id="others"></div>
+</main>
+<div class="toast" id="toast"></div>
+<script type="module">
+/* ============ SETTINGS ============ */
+const SUPABASE_URL = "https://gednciiobqwcocobsgim.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlZG5jaWlvYnF3Y29jb2JzZ2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MTk3NDUsImV4cCI6MjEwOTE5NTc0NX0.Nh5kkIWbKkjwVxSuCVJzMVuGn-M6IQPbZMqUNp3pf6s";     // the "anon public" key (safe to put on a website)
+const MAX_TASKS = 40;
+const CAFE_TIMEZONE = "Asia/Singapore";   // check-ins reset at midnight here (same as the cafe)
+const CARD_SIZE = 10;                      // stamps per boba passport
+/* ================================= */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const DEMO = new URLSearchParams(location.search).has("demo") || !SUPABASE_URL;
+let sb, me = null, mine = null, editing = -1;
+
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 2200); }
+
+/* ---------- a pretend database for trying the page (demo mode) ---------- */
+function demoClient() {
+  const rows = {
+    lilmissboba: { login: "lilmissboba", twitch_id: "1", display: "lilmissboba", tasks: [{ text: "stream setup", done: true }, { text: "edit vod", done: false }, { text: "walk ashe", done: false }], current: 1, pearls_today: 1 },
+    kyayu_: { login: "kyayu_", twitch_id: "2", display: "kyayu_", tasks: [{ text: "study for exam", done: false }, { text: "laundry", done: false }, { text: "dinner", done: true }, { text: "stretch", done: false, daily: true }], current: 0, pearls_today: 3 },
+    pearlpanda: { login: "pearlpanda", twitch_id: "3", display: "pearlpanda", tasks: [{ text: "read 20 pages", done: false }, { text: "email boss", done: true }], current: 0, pearls_today: 5 },
+  };
+  rows.kyayu_.checkin = { total: 14, stamps: 4, cards: 1, streak: 3, last: "2000-01-01", display: "kyayu_" };
+  rows.pearlpanda.gb_msg = "love this cafe so much ♡"; rows.pearlpanda.gb_signed_at = new Date(Date.now() - 86400000).toISOString();
+  rows.lilmissboba.gb_msg = ""; rows.lilmissboba.gb_signed_at = new Date(Date.now() - 2 * 86400000).toISOString();
+  for (const r of Object.values(rows)) r.updated_at = new Date().toISOString();
+  let session = null;
+  const q = () => { const st = { f: [] }; const api = {
+    select() { return api; }, eq(k, v) { st.f.push([k, v]); return api; }, not(k) { st.f.push([k, "__notnull"]); return api; }, order() { return api; }, limit(n) { st.limit = n; return api; },
+    update(vals) { st.upd = vals; return api; },
+    then(res, rej) {
+      let list = Object.values(rows).filter(r => st.f.every(([k, v]) => v === "__notnull" ? r[k] != null : String(r[k]) === String(v)));
+      if (st.upd) { list.forEach(r => Object.assign(r, JSON.parse(JSON.stringify(st.upd)))); }
+      list = list.map(r => JSON.parse(JSON.stringify(r)));
+      if (st.single) return Promise.resolve({ data: list[0] || null, error: null }).then(res, rej);
+      return Promise.resolve({ data: st.limit ? list.slice(0, st.limit) : list, error: null }).then(res, rej);
+    },
+    maybeSingle() { st.single = true; return api; },
+  }; return api; };
+  return {
+    auth: {
+      getSession: async () => ({ data: { session } }),
+      onAuthStateChange: () => ({}),
+      signInWithOAuth: async () => { session = { user: { user_metadata: { provider_id: "2", name: "kyayu_", nickname: "kyayu_" } } }; boot(); },
+      signOut: async () => { session = null; boot(); },
+    },
+    from: () => q(),
+  };
+}
+
+/* ---------- loading and saving your ticket ---------- */
+async function loadMine() {
+  const { data } = await sb.from("cafe_lists").select("*").eq("twitch_id", me.id).maybeSingle();
+  return data;
+}
+async function mutateRow(patchFor, okMsg) {   // read the latest, change it, save it (retries if the cafe changed it at the same moment)
+  for (let tries = 0; tries < 3; tries++) {
+    const row = await loadMine(); if (!row) return;
+    const patch = patchFor(JSON.parse(JSON.stringify(row)));
+    if (!patch) return;
+    const { data, error } = await sb.from("cafe_lists").update(Object.assign(patch, { updated_by: "web", updated_at: new Date().toISOString() }))
+      .eq("login", row.login).eq("updated_at", row.updated_at).select();
+    if (!error && data && data.length) { mine = data[0]; editing = -1; render(); renderGuestbook(); if (okMsg) toast(typeof okMsg === "function" ? okMsg() : okMsg); return; }
+  }
+  toast("couldn't save, try again in a moment");
+}
+function mutate(change, okMsg) {
+  return mutateRow(row => { const tasks = row.tasks || [], st = { current: row.current == null ? -1 : row.current }; if (change(tasks, st) === false) return null; return { tasks, current: st.current }; }, okMsg);
+}
+/* ---------- daily check-in (boba passport) and the guestbook ---------- */
+function cafeDay(d = new Date()) { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: CAFE_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).forEach(x => p[x.type] = x.value); return `${p.year}-${p.month}-${p.day}`; }
+let lastCheckin = null;
+function checkIn() {
+  mutateRow(row => {
+    const today = cafeDay(), ci = row.checkin || { total: 0, stamps: 0, cards: 0, streak: 0, last: "" };
+    if (ci.last === today) { toast("already checked in today ✓"); return null; }
+    const y = new Date(today + "T00:00:00Z"); y.setUTCDate(y.getUTCDate() - 1);
+    ci.streak = ci.last === y.toISOString().slice(0, 10) ? (ci.streak || 0) + 1 : 1;
+    ci.last = today; ci.total = (ci.total || 0) + 1; ci.stamps = (ci.stamps || 0) + 1; ci.display = row.display || row.login;
+    ci.justFilled = false;
+    if (ci.stamps >= CARD_SIZE) { ci.cards = (ci.cards || 0) + 1; ci.stamps = 0; ci.justFilled = true; }
+    ci.web = true; lastCheckin = ci;
+    return { checkin: ci };
+  }, () => lastCheckin && lastCheckin.justFilled ? `passport #${lastCheckin.cards} filled! 🎉` : "checked in! 🧋");
+}
+function signGuestbook(note) {
+  mutateRow(row => ({ gb_msg: note.trim().slice(0, 200), gb_signed_at: new Date().toISOString() }), mine && mine.gb_signed_at ? "your note is updated ♡" : "thanks for signing the guestbook ♡");
+}
+const cup = i => { const c = [["#E8C9A6", "#C99A6B"], ["#D9C2F0", "#A98BD8"], ["#CDEBC0", "#8DBF7A"], ["#F9C6D6", "#E890AB"], ["#FFE3A1", "#E8B860"]][i % 5];
+  return `<svg viewBox="0 0 50 54" width="40" height="44"><path d="M31 2l-4 14" stroke="${c[1]}" stroke-width="3.4" stroke-linecap="round"/><path d="M10 15q15-9 30 0v3H10z" fill="#fff" stroke="${c[1]}" stroke-width="1.6"/><path d="M11 18h28l-3.4 30q-.4 3-3.4 3H17.8q-3 0-3.4-3z" fill="${c[0]}" stroke="${c[1]}" stroke-width="1.6"/><g fill="#5A3826"><circle cx="18" cy="44" r="2.3"/><circle cx="24" cy="46" r="2.3"/><circle cx="30" cy="44" r="2.3"/><circle cx="21" cy="40" r="2.3"/><circle cx="28" cy="40" r="2.3"/></g><circle cx="20" cy="28" r="1.6" fill="#5A3826"/><circle cx="30" cy="28" r="1.6" fill="#5A3826"/><path d="M23 31q2 2 4 0" stroke="#5A3826" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>`; };
+function passportHTML() {
+  const ci = mine.checkin || { stamps: 0, cards: 0, total: 0, streak: 0, last: "" }, done = ci.last === cafeDay();
+  const slots = Array.from({ length: CARD_SIZE }, (_, i) => `<div class="slot ${i < ci.stamps ? "on" : ""}">${i < ci.stamps ? cup(i) : ""}</div>`).join("");
+  const left = CARD_SIZE - (ci.stamps || 0);
+  return `<div class="card passport"><div class="pin">
+      <div class="ph"><span class="av">${esc((mine.display || mine.login).charAt(0).toUpperCase())}</span><span class="pnm">${esc(mine.display || mine.login)}</span><span class="lb">boba passport</span></div>
+      <div class="grid">${slots}</div>
+      <div class="pf">passport #${(ci.cards || 0) + 1} · <b>${left}</b> more ${left === 1 ? "stamp" : "stamps"} to fill it${ci.cards ? ` · ${ci.cards} filled 🎫` : ""}${ci.streak > 1 && done ? ` · ${ci.streak}-day streak 🔥` : ""}</div>
+      <div class="center">${done ? `<button class="big" disabled>checked in today ✓</button>` : `<button class="big" id="checkin">check in today 🧋</button>`}</div>
+      <p class="hint center">one stamp a day, here or with !checkin on stream (they share the same passport)</p>
+    </div></div>`;
+}
+async function renderGuestbook() {
+  const { data } = await sb.from("cafe_lists").select("login,display,gb_msg,gb_signed_at").not("gb_signed_at", "is", null).order("gb_signed_at", { ascending: false }).limit(60);
+  const list = (data || []).filter(r => r.gb_signed_at).sort((a, b) => b.gb_signed_at.localeCompare(a.gb_signed_at));
+  const signed = mine && mine.gb_signed_at;
+  $("guestbook").innerHTML = `<div class="gbcard"><div class="gbtitle">🌸 miss boba's guestbook 🌸</div>
+    ${me && mine ? `<form class="gbsign" id="gbForm"><input id="gbNote" maxlength="200" placeholder="leave a note for miss boba (optional)" value="${signed ? esc(mine.gb_msg || "") : ""}"><button class="big">${signed ? "update my note" : "sign"}</button></form>` : ""}
+    <div class="gblist">${list.length ? list.map(r => `<div class="gbe"><span>🌸</span><div><b>${esc(r.display || r.login)}</b>${r.gb_msg ? `<small>"${esc(r.gb_msg)}"</small>` : ""}</div></div>`).join("") : `<div class="empty">no signatures yet. be the first ♡</div>`}</div>
+    <p class="hint center">${list.length} ${list.length === 1 ? "signature" : "signatures"} · you can also sign on stream with !sign</p></div>`;
+  const f = $("gbForm"); if (f) f.onsubmit = e => { e.preventDefault(); signGuestbook($("gbNote").value); };
+}
+
+/* ---------- what you can do ---------- */
+function addTasks(text) {
+  const items = text.split(";").map(x => x.trim()).filter(Boolean).map(x => x.slice(0, 200));
+  if (!items.length) return;
+  mutate(t => { if (t.length + items.length > MAX_TASKS) { toast(`your list is full (${MAX_TASKS} max)`); return false; } items.forEach(x => t.push({ text: x, done: false, addedAt: Date.now() })); },
+    items.length > 1 ? `added ${items.length} tasks!` : "task added!");
+}
+function toggleDone(i) {
+  mutate((t, st) => {
+    const x = t[i]; if (!x) return false;
+    if (!x.done) { x.done = true; x.doneAt = Date.now(); x.webDone = true; if (st.current === i) st.current = -1; }
+    else { x.done = false; delete x.doneAt; delete x.webDone; }
+  }, mine && mine.tasks[i] && !mine.tasks[i].done ? "done! ✓ +1 pearl" : "put back on your list");
+}
+function focusTask(i) { mutate((t, st) => { if (!t[i] || t[i].done) return false; st.current = st.current === i ? -1 : i; }, mine && mine.current === i ? "stopped focusing" : "focusing ♡"); }
+function delTask(i) { mutate((t, st) => { if (!t[i]) return false; t.splice(i, 1); if (st.current === i) st.current = -1; else if (st.current > i) st.current--; }, "crossed that off"); }
+function editTask(i, text) { text = text.trim().slice(0, 200); if (!text) { editing = -1; render(); return; } mutate(t => { if (!t[i]) return false; t[i].text = text; }, "saved"); }
+
+/* ---------- drawing the page ---------- */
+function render() {
+  const app = $("app");
+  if (!me) {
+    app.innerHTML = `<div class="note"><h2>welcome in ♡</h2><p>log in with your twitch account to see and update your task ticket, even when the stream is offline.</p>
+      <button class="big twitch" id="login">log in with twitch</button></div>`;
+    $("login").onclick = () => sb.auth.signInWithOAuth({ provider: "twitch", options: { redirectTo: location.origin + location.pathname } });
+    return;
+  }
+  if (!mine) {
+    app.innerHTML = `<div class="note"><h2>we can't find your ticket yet</h2><p>say hi in <b>lilmissboba</b>'s twitch chat during a stream so the cafe makes your ticket, then come back here!</p>
+      <button class="big" id="out">log out</button></div>`;
+    $("out").onclick = () => sb.auth.signOut();
+    return;
+  }
+  const t = mine.tasks || [], cur = mine.current == null ? -1 : mine.current;
+  const rows = t.map((x, i) => editing === i
+    ? `<li><span class="no">${i + 1}</span><input class="edit" id="editBox" value="${esc(x.text)}" maxlength="200"><button class="btn" data-a="save" data-i="${i}">save</button></li>`
+    : `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""}"><span class="no">${i + 1}</span>
+        <button class="chk" data-a="done" data-i="${i}" aria-label="${x.done ? "mark not done" : "mark done"}">${x.done ? "✓" : ""}</button>
+        <span class="tx" data-a="edit" data-i="${i}" title="click to edit">${esc(x.text)}</span>
+        ${x.daily ? `<span class="tag daily">daily</span>` : ""}${cur === i ? `<span class="tag">focusing</span>` : ""}
+        ${x.done ? "" : `<button class="btn f" data-a="focus" data-i="${i}">${cur === i ? "unfocus" : "focus"}</button>`}
+        <button class="btn x" data-a="del" data-i="${i}" aria-label="delete">×</button></li>`).join("");
+  app.innerHTML = `<div class="card ticket"><span class="clip"></span><div class="paper">
+      <div class="head"><span class="nm">${esc(mine.display || mine.login)}</span><span class="pill">✓ ${mine.pearls_today || 0} today</span>
+        ${cur >= 0 && t[cur] ? `<span class="pill pink">focusing on ${cur + 1}</span>` : ""}<button class="out" id="out">log out</button></div>
+      <ol>${rows || `<div class="empty">your list is empty. add your first task below ♡</div>`}</ol>
+      <form class="add" id="addForm"><input id="newTask" placeholder="add a task (use ; for several)" maxlength="400" autocomplete="off"><button class="big">add</button></form>
+      <p class="hint">tap a task to rename it · tap the circle when it's done · your ticket in the cafe updates within a few seconds</p>
+    </div></div>`;
+  app.insertAdjacentHTML("beforeend", passportHTML());
+  const ck = $("checkin"); if (ck) ck.onclick = () => checkIn();
+  $("out").onclick = () => sb.auth.signOut();
+  $("addForm").onsubmit = e => { e.preventDefault(); const v = $("newTask").value; $("newTask").value = ""; addTasks(v); };
+  app.querySelectorAll("[data-a]").forEach(el => el.onclick = () => {
+    const i = +el.dataset.i, a = el.dataset.a;
+    if (a === "done") toggleDone(i); else if (a === "focus") focusTask(i); else if (a === "del") delTask(i);
+    else if (a === "edit") { editing = i; render(); const b = $("editBox"); b.focus(); b.select(); b.onkeydown = ev => { if (ev.key === "Enter") editTask(i, b.value); if (ev.key === "Escape") { editing = -1; render(); } }; }
+    else if (a === "save") editTask(i, $("editBox").value);
+  });
+}
+async function renderOthers() {   // everyone else's tickets, like the side panel in the cafe
+  const { data } = await sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,updated_at").order("updated_at", { ascending: false }).limit(24);
+  const list = (data || []).filter(r => !mine || r.login !== mine.login).filter(r => (r.tasks || []).some(t => !t.done));
+  $("othersTitle").hidden = !list.length;
+  $("others").innerHTML = list.map(r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current;
+    return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span></div>
+      <ul>${t.slice(0, 6).map((x, i) => `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""}">${i + 1}. ${esc(x.text)}${cur === i ? " ★" : ""}</li>`).join("")}${t.length > 6 ? `<li>+${t.length - 6} more</li>` : ""}</ul></div></div>`; }).join("");
+}
+
+async function boot() {
+  const { data } = await sb.auth.getSession();
+  const s = data && data.session;
+  me = s ? { id: String(s.user.user_metadata.provider_id || s.user.user_metadata.sub || ""), name: s.user.user_metadata.nickname || s.user.user_metadata.name || "" } : null;
+  mine = me ? await loadMine() : null;
+  render(); renderOthers(); renderGuestbook();
+}
+
+(async () => {
+  if (DEMO) { sb = demoClient(); $("demoNote").innerHTML = `<div class="demo">demo mode: try it out with pretend data ♡ (nothing is saved)</div>`; }
+  else { const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); sb.auth.onAuthStateChange(() => boot()); }
+  await boot();
+  setInterval(async () => { if (me && editing < 0 && document.activeElement !== $("newTask")) { mine = await loadMine(); render(); } renderOthers(); }, 10000);   // picks up changes made in the cafe
+})();
+</script>
+</body>
+</html>
