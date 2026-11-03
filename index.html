@@ -195,7 +195,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/03 g</div>
+<div id="ver">cafe website · version 11/03 i</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -227,17 +227,17 @@ function demoClient() {
   rows.kyayu_.checkin = { total: 14, stamps: 4, cards: 1, streak: 3, last: "2000-01-01", display: "kyayu_" };
   rows.pearlpanda.gb_msg = "love this cafe so much ♡"; rows.pearlpanda.gb_signed_at = new Date(Date.now() - 86400000).toISOString();
   rows.lilmissboba.gb_msg = ""; rows.lilmissboba.gb_signed_at = new Date(Date.now() - 2 * 86400000).toISOString();
-  rows.__cafe__ = { login: "__cafe__", tasks: [], current: -1, pomo: { phase: "focus", paused: false, endsAt: Date.now() + 37 * 60000 + 12000, remaining: 0, round: 2, sessions: 4, focusMin: 50, breakMin: 10 } };
+  rows.__cafe__ = { login: "__cafe__", tasks: [], current: -1, pomo: { here: ["lilmissboba", "pearlpanda", "mochimallow"], phase: "focus", paused: false, endsAt: Date.now() + 37 * 60000 + 12000, remaining: 0, round: 2, sessions: 4, focusMin: 50, breakMin: 10 } };
   rows.lilmissboba.in_cafe = true; rows.lilmissboba.status = "working"; rows.pearlpanda.in_cafe = true; rows.pearlpanda.status = "working"; rows.pearlpanda.web_seen_at = new Date().toISOString();
   rows.taro_tuesday = { login: "taro_tuesday", twitch_id: "5", display: "taro_tuesday", tasks: [{ text: "finish essay", done: false, urgent: true }, { text: "reply to emails", done: false }, { text: "groceries", done: true }], current: 0, pearls_today: 2, web_seen_at: new Date().toISOString() };
   rows.mochimallow = { login: "mochimallow", twitch_id: "4", display: "mochimallow", tasks: [], current: -1, pearls_today: 0, in_cafe: true, status: "lurking" };
   for (const r of Object.values(rows)) r.updated_at = new Date().toISOString();
   let session = null;
   const q = () => { const st = { f: [] }; const api = {
-    select() { return api; }, eq(k, v) { st.f.push([k, v]); return api; }, not(k) { st.f.push([k, "__notnull"]); return api; }, gt(k, v) { st.f.push([k, "__gt", v]); return api; }, order() { return api; }, limit(n) { st.limit = n; return api; },
+    select() { return api; }, eq(k, v) { st.f.push([k, v]); return api; }, not(k) { st.f.push([k, "__notnull"]); return api; }, gt(k, v) { st.f.push([k, "__gt", v]); return api; }, in(k, vs) { st.f.push([k, "__in", vs]); return api; }, order() { return api; }, limit(n) { st.limit = n; return api; },
     update(vals) { st.upd = vals; return api; },
     then(res, rej) {
-      let list = Object.values(rows).filter(r => st.f.every(([k, v, w]) => v === "__notnull" ? r[k] != null : v === "__gt" ? r[k] != null && r[k] > w : String(r[k]) === String(v)));
+      let list = Object.values(rows).filter(r => st.f.every(([k, v, w]) => v === "__notnull" ? r[k] != null : v === "__gt" ? r[k] != null && r[k] > w : v === "__in" ? w.includes(r[k]) : String(r[k]) === String(v)));
       if (st.upd) { list.forEach(r => Object.assign(r, JSON.parse(JSON.stringify(st.upd)))); }
       list = list.map(r => JSON.parse(JSON.stringify(r)));
       if (st.single) return Promise.resolve({ data: list[0] || null, error: null }).then(res, rej);
@@ -485,22 +485,26 @@ async function renderWebNow(live) {
   if (error) ({ data, error } = await sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,web_seen_at").gt("web_seen_at", since).limit(60));
   const all = error ? [] : (data || []).filter(r => r.login !== "__cafe__" && (!mine || r.login !== mine.login));
   webHere = new Set(all.map(r => r.login));
-  const list = all.filter(r => !(live && r.in_cafe));   // people who are in the cafe on stream show up there instead (with a 💻)
+  const list = all.filter(r => !(live && (window.cafeHere ? window.cafeHere.has(r.login) : r.in_cafe)));   // people who are in the cafe on stream show up there instead (with a 💻)
   $("webTitle").hidden = !list.length;
   $("webTitle").textContent = `working on the website right now · ${list.length}`;
   pinboard($("webNow"), list);
 }
 async function renderOthers() {   // when the stream's on: everyone in the cafe right now. otherwise: recent tickets
-  let { data: beat, error: beatErr } = await sb.from("cafe_lists").select("updated_at,pomo").eq("login", "__cafe__").maybeSingle();
-  if (beatErr) ({ data: beat } = await sb.from("cafe_lists").select("updated_at").eq("login", "__cafe__").maybeSingle());   // timer column not added yet
+  let { data: beat, error: beatErr } = await sb.from("cafe_lists").select("updated_at,pomo,tasks").eq("login", "__cafe__").maybeSingle();
+  if (beatErr) ({ data: beat } = await sb.from("cafe_lists").select("updated_at,tasks").eq("login", "__cafe__").maybeSingle());   // timer column not added yet
+  if (beat && !(beat.pomo && Array.isArray(beat.pomo.here)) && Array.isArray(beat.tasks) && beat.tasks.length && beat.tasks.every(t => t && t.text && !("done" in t)))
+    beat.pomo = Object.assign({}, beat.pomo, { here: beat.tasks.map(t => t.text) });   // backup copy of who's here
   const open = beat && Date.now() - Date.parse(beat.updated_at) < 3 * 60000;
+  window.cafeHere = open && beat.pomo && Array.isArray(beat.pomo.here) ? new Set(beat.pomo.here) : null;
   await renderWebNow(!!open).catch(() => {});
   window.streamPomo = open && beat.pomo && beat.pomo.phase && beat.pomo.phase !== "idle" ? beat.pomo : null;
   $("twbar").classList.toggle("live", !!open);
   $("twtxt").textContent = open ? "the cafe is open right now! come co-work with us on twitch ♡" : "miss boba's cafe is also on twitch ♡ come co-work with us";
   document.querySelector("#twbar .twbtn").textContent = open ? "join on twitch" : "visit on twitch";
+  const here = open && beat.pomo && Array.isArray(beat.pomo.here) ? beat.pomo.here : null;   // the cafe's own list of who's sitting in it right now
   let q = sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,updated_at,in_cafe,status");
-  q = open ? q.eq("in_cafe", true).limit(80) : q.order("updated_at", { ascending: false }).limit(120);
+  q = open ? (here ? q.in("login", here.length ? here : ["-"]).limit(120) : q.eq("in_cafe", true).limit(80)) : q.order("updated_at", { ascending: false }).limit(120);
   let { data, error } = await q;
   let live = open;
   if (error) {   // the "who's in the cafe" columns aren't in the database yet: show recent tickets instead of nothing
