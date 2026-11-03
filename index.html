@@ -17,6 +17,26 @@ main{max-width:760px;margin:0 auto;padding:22px 16px 60px}
 .board .line{width:52%;height:2px;margin:10px auto 8px;background:#F2C98E;opacity:.7;border-radius:2px}
 .board p{margin:0;color:#EAD9C0;font-size:16px}
 .board p b{color:#F7B6C8;font-weight:600}
+/* your own pomodoro timer, like the focus timer on stream */
+.pomo{margin-top:18px;background:#2E3B33;border:10px solid #5A3826;border-radius:18px;padding:14px 18px 16px;color:#FBEFDD;box-shadow:0 5px 0 rgba(0,0,0,.3),inset 0 0 40px rgba(0,0,0,.3)}
+.pomo .ptop{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.pomo .plabel{font:700 30px/1 Gaegu,cursive;color:#FBEFDD}.pomo.brk .plabel{color:#BDE8C9}
+.pomo .psess{font:700 18px Gaegu,cursive;color:#F2C98E}
+.pomo .ptime{font:600 76px/1.05 Fredoka,sans-serif;letter-spacing:1px;margin:6px 0 8px;font-variant-numeric:tabular-nums}
+.pomo .pbar{height:10px;border-radius:999px;background:rgba(251,239,221,.15);overflow:hidden}.pomo .pbar i{display:block;height:100%;width:0;background:#9CD3A8;border-radius:999px;transition:width .5s linear}
+.pomo.brk .pbar i{background:#F7B6C8}
+.pomo .ptask{min-height:22px;margin-top:8px;color:#EAD9C0;font-size:15px}.pomo .ptask b{color:#F7B6C8;font-weight:600}
+.pomo .pbtns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pomo .pb{border:0;border-radius:12px;padding:9px 14px;font:600 15px Fredoka,sans-serif;cursor:pointer;background:rgba(251,239,221,.14);color:#FBEFDD}
+.pomo .pb:hover{background:rgba(251,239,221,.22)}.pomo .pb.main{background:#F7A8C4;color:#4A2E1F;min-width:96px;box-shadow:0 3px 0 #C85A78}
+.pomo [hidden]{display:none!important}
+.pomo .pb.live{background:#9146FF;color:#fff;box-shadow:0 3px 0 #6A2FD0;margin-left:auto}
+.pomo.following .pb:not(.live):not(#pSet){display:none}
+.pomo .plabel small{font:600 13px Fredoka,sans-serif;color:#C9B8F5;margin-left:8px;letter-spacing:0;vertical-align:middle}
+.pomo .pset{margin-top:12px;padding-top:12px;border-top:2px dashed rgba(251,239,221,.18);display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;font-size:15px;color:#EAD9C0}
+.pomo .pset .pre{width:100%;display:flex;gap:8px}.pomo .chip{border:0;border-radius:999px;padding:6px 12px;font:600 14px Fredoka,sans-serif;cursor:pointer;background:rgba(251,239,221,.14);color:#FBEFDD}
+.pomo .pset input[type=number]{width:62px;font:500 15px Fredoka,sans-serif;padding:6px 8px;border-radius:10px;border:0;background:#FBEFDD;color:#4A2E1F}
+.pomo .pset .chk{display:flex;align-items:center;gap:6px}
 .card{margin-top:22px}
 .twbar{display:flex;align-items:center;gap:12px;margin-top:16px;padding:10px 12px 10px 16px;border-radius:16px;background:#F3EAFF;color:#4B2A82;text-decoration:none;box-shadow:0 4px 0 rgba(0,0,0,.25),inset 0 0 0 2px #D9C5FB;font:500 16px Fredoka,sans-serif}
 .twbar:hover{background:#ECDFFF}
@@ -136,6 +156,27 @@ main{padding-bottom:110px}
     <p>your task ticket, open even when the stream isn't ♡ changes show up on your ticket in the cafe</p>
   </div>
   <a class="twbar" id="twbar" target="_blank" rel="noopener"><span class="twdot"></span><span class="twtxt" id="twtxt">miss boba's cafe is also on twitch ♡ come co-work with us</span><span class="twbtn">visit on twitch</span></a>
+  <div class="pomo" id="pomo">
+    <div class="ptop"><span class="plabel" id="pLabel">focus time</span><span class="psess" id="pSess">session 1 of 4</span></div>
+    <div class="ptime" id="pTime">50:00</div>
+    <div class="pbar"><i id="pBar"></i></div>
+    <div class="ptask" id="pTask"></div>
+    <div class="pbtns">
+      <button class="pb main" id="pStart">start</button>
+      <button class="pb" id="pSkip" title="skip to the next part">skip</button>
+      <button class="pb" id="pReset" title="start over">reset</button>
+      <button class="pb" id="pSet" title="timer settings" aria-label="timer settings">⚙</button>
+      <button class="pb live" id="pFollow" hidden></button>
+    </div>
+    <div class="pset" id="pSetBox" hidden>
+      <div class="pre"><button class="chip" data-p="25,5,4">25 / 5</button><button class="chip" data-p="50,10,4">50 / 10</button><button class="chip" data-p="90,15,2">90 / 15</button></div>
+      <label>focus <input type="number" id="pF" min="1" max="180"> min</label>
+      <label>break <input type="number" id="pB" min="1" max="60"> min</label>
+      <label>sessions <input type="number" id="pN" min="1" max="12"></label>
+      <label class="chk"><input type="checkbox" id="pAuto"> start the next part by itself</label>
+      <label class="chk"><input type="checkbox" id="pSound"> chime when time's up</label>
+    </div>
+  </div>
   <div id="demoNote"></div>
   <div id="app"><div class="note"><h2>opening the cafe…</h2><p>one moment ♡</p></div></div>
   <div id="guestbook"></div>
@@ -150,7 +191,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/02 f</div>
+<div id="ver">cafe website · version 11/03 b</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -182,7 +223,7 @@ function demoClient() {
   rows.kyayu_.checkin = { total: 14, stamps: 4, cards: 1, streak: 3, last: "2000-01-01", display: "kyayu_" };
   rows.pearlpanda.gb_msg = "love this cafe so much ♡"; rows.pearlpanda.gb_signed_at = new Date(Date.now() - 86400000).toISOString();
   rows.lilmissboba.gb_msg = ""; rows.lilmissboba.gb_signed_at = new Date(Date.now() - 2 * 86400000).toISOString();
-  rows.__cafe__ = { login: "__cafe__", tasks: [], current: -1 };
+  rows.__cafe__ = { login: "__cafe__", tasks: [], current: -1, pomo: { phase: "focus", paused: false, endsAt: Date.now() + 37 * 60000 + 12000, remaining: 0, round: 2, sessions: 4, focusMin: 50, breakMin: 10 } };
   rows.lilmissboba.in_cafe = true; rows.lilmissboba.status = "working"; rows.pearlpanda.in_cafe = true; rows.pearlpanda.status = "working";
   rows.mochimallow = { login: "mochimallow", twitch_id: "4", display: "mochimallow", tasks: [], current: -1, pearls_today: 0, in_cafe: true, status: "lurking" };
   for (const r of Object.values(rows)) r.updated_at = new Date().toISOString();
@@ -417,8 +458,10 @@ function render() {
   });
 }
 async function renderOthers() {   // when the stream's on: everyone in the cafe right now. otherwise: recent tickets
-  const { data: beat } = await sb.from("cafe_lists").select("updated_at").eq("login", "__cafe__").maybeSingle();
+  let { data: beat, error: beatErr } = await sb.from("cafe_lists").select("updated_at,pomo").eq("login", "__cafe__").maybeSingle();
+  if (beatErr) ({ data: beat } = await sb.from("cafe_lists").select("updated_at").eq("login", "__cafe__").maybeSingle());   // timer column not added yet
   const open = beat && Date.now() - Date.parse(beat.updated_at) < 3 * 60000;
+  window.streamPomo = open && beat.pomo && beat.pomo.phase && beat.pomo.phase !== "idle" ? beat.pomo : null;
   $("twbar").classList.toggle("live", !!open);
   $("twtxt").textContent = open ? "the cafe is open right now! come co-work with us on twitch ♡" : "miss boba's cafe is also on twitch ♡ come co-work with us";
   document.querySelector("#twbar .twbtn").textContent = open ? "join on twitch" : "visit on twitch";
@@ -459,6 +502,82 @@ async function bootInner() {
 }
 
 $("twbar").href = TWITCH_URL;
+/* ---------- your own pomodoro timer (saved on this device, keeps going if you refresh) ---------- */
+(() => {
+  const KEY = "bobaPomo", el = id => $(id);
+  let st = { follow: true, f: 50, b: 10, n: 4, auto: true, sound: true, phase: "focus", sess: 1, endAt: 0, left: 50 * 60, running: false, done: false };
+  try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+  const total = () => (st.phase === "focus" ? st.f : st.b) * 60;
+  const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  let ctx;
+  function chime(up) {   // a soft cafe chime
+    if (!st.sound) return;
+    try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); const t0 = ctx.currentTime;
+      (up ? [659, 784, 988] : [988, 784, 659]).forEach((f, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0, t0 + i * .18); g.gain.linearRampToValueAtTime(.18, t0 + i * .18 + .02); g.gain.exponentialRampToValueAtTime(.001, t0 + i * .18 + 1.1);
+        o.connect(g).connect(ctx.destination); o.start(t0 + i * .18); o.stop(t0 + i * .18 + 1.2); }); } catch (e) {}
+  }
+  function nextPart() {
+    if (st.phase === "focus") {
+      if (st.sess >= st.n) { st.running = false; st.done = true; st.phase = "focus"; st.left = st.f * 60; chime(true); toast("all sessions done! amazing work ✨"); return; }
+      st.phase = "break"; chime(false); toast("break time! stretch & sip some water 💧");
+    } else { st.phase = "focus"; st.sess++; chime(true); toast("back to focus ♡"); }
+    st.left = total();
+    if (st.running && st.auto) st.endAt = Date.now() + st.left * 1000; else st.running = false;
+  }
+  let lastLive = "";
+  function drawLive(lp) {   // showing miss boba's stream timer
+    const total = (lp.phase === "break" ? lp.breakMin : lp.focusMin) * 60, left = Math.max(0, Math.round((lp.paused ? lp.remaining : lp.endsAt - Date.now()) / 1000));
+    const key = lp.phase + lp.round; if (lastLive && key !== lastLive) chime(lp.phase === "focus"); lastLive = key;
+    el("pomo").classList.toggle("brk", lp.phase === "break"); el("pomo").classList.add("following");
+    el("pLabel").innerHTML = `${lp.paused ? "paused" : lp.phase === "focus" ? "focus time" : "break time"}<small>🎥 miss boba's timer</small>`;
+    el("pSess").textContent = `session ${lp.round} of ${lp.sessions}`;
+    el("pTime").textContent = fmt(left);
+    el("pBar").style.width = `${Math.min(100, 100 - left / total * 100)}%`;
+    const t = mine && mine.tasks && mine.tasks[mine.current];
+    el("pTask").innerHTML = lp.phase === "focus" && t && !t.done ? `focusing on: <b>${esc(t.text)}</b>` : lp.phase === "break" ? "break time with the cafe ♡" : "";
+    el("pFollow").hidden = false; el("pFollow").textContent = "use my own timer";
+    document.title = `${fmt(left)} · ${lp.phase === "focus" ? "focus" : "break"} with miss boba`;
+  }
+  function draw() {
+    const lp = window.streamPomo;
+    if (lp && st.follow) { drawLive(lp); return; }
+    lastLive = ""; el("pomo").classList.remove("following");
+    el("pFollow").hidden = !lp; el("pFollow").textContent = "🎥 follow miss boba's timer";
+    if (st.running) { st.left = Math.max(0, Math.round((st.endAt - Date.now()) / 1000)); if (st.left <= 0) { nextPart(); save(); } }
+    el("pomo").classList.toggle("brk", st.phase === "break");
+    el("pLabel").textContent = st.done ? "all done ✨" : st.phase === "focus" ? "focus time" : "break time";
+    el("pSess").textContent = `session ${Math.min(st.sess, st.n)} of ${st.n}`;
+    el("pTime").textContent = fmt(st.left);
+    el("pBar").style.width = `${Math.min(100, 100 - st.left / total() * 100)}%`;
+    el("pStart").textContent = st.running ? "pause" : st.left < total() ? "resume" : "start";
+    const t = mine && mine.tasks && mine.tasks[mine.current];
+    el("pTask").innerHTML = st.phase === "focus" && t && !t.done ? `focusing on: <b>${esc(t.text)}</b>` : st.phase === "break" ? "take a little break ♡" : "";
+    document.title = st.running ? `${fmt(st.left)} · ${st.phase === "focus" ? "focus" : "break"} · miss boba's cafe` : "miss boba's cafe · your task ticket";
+  }
+  el("pStart").onclick = () => {
+    if (st.done) { st.done = false; st.sess = 1; st.phase = "focus"; st.left = st.f * 60; }
+    if (st.running) { st.running = false; st.left = Math.max(0, Math.round((st.endAt - Date.now()) / 1000)); }
+    else { st.running = true; st.endAt = Date.now() + st.left * 1000; try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (e) {} }
+    save(); draw();
+  };
+  el("pSkip").onclick = () => { const was = st.running; st.running = true; nextPart(); if (!was) st.running = false; save(); draw(); };
+  el("pReset").onclick = () => { st.running = false; st.done = false; st.phase = "focus"; st.sess = 1; st.left = st.f * 60; save(); draw(); };
+  el("pFollow").onclick = () => { st.follow = !st.follow; if (st.follow) { st.running = false; } save(); draw(); toast(st.follow ? "following miss boba's timer 🎥" : "using your own timer ♡"); };
+  el("pSet").onclick = () => { el("pSetBox").hidden = !el("pSetBox").hidden; };
+  const fill = () => { el("pF").value = st.f; el("pB").value = st.b; el("pN").value = st.n; el("pAuto").checked = st.auto; el("pSound").checked = st.sound; };
+  const apply = () => {
+    st.f = Math.max(1, Math.min(180, +el("pF").value || 50)); st.b = Math.max(1, Math.min(60, +el("pB").value || 10)); st.n = Math.max(1, Math.min(12, +el("pN").value || 4));
+    st.auto = el("pAuto").checked; st.sound = el("pSound").checked;
+    if (!st.running) st.left = total();   // new lengths apply right away if the timer isn't running
+    save(); draw();
+  };
+  ["pF", "pB", "pN", "pAuto", "pSound"].forEach(id => el(id).onchange = apply);
+  document.querySelectorAll("#pSetBox .chip").forEach(c => c.onclick = () => { const [f, b, n] = c.dataset.p.split(",").map(Number); el("pF").value = f; el("pB").value = b; el("pN").value = n; apply(); toast(`${f} min focus · ${b} min break`); });
+  fill(); draw(); setInterval(draw, 500);
+})();
+
 /* ---------- cafe radio ---------- */
 (() => {
   const r = $("radio"), btn = $("radioBtn");
