@@ -120,6 +120,8 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .gbsign{display:flex;gap:10px;margin-bottom:12px}.gbsign input{flex:1;min-width:0;font:500 16px Fredoka,sans-serif;padding:11px 14px;border:2px solid #EADBC8;border-radius:14px;background:#fff;color:var(--ink)}
 .gblist{background:#FFFDF8;border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;box-shadow:0 0 0 1.5px #EFE3D3}
 @media (max-width:560px){.gblist{grid-template-columns:1fr}.passport .slot{width:48px;height:48px}.passport .slot svg{width:34px;height:38px}}
+.gbpages{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px;font:600 15px Fredoka,sans-serif;color:var(--soft)}
+.gbpages .soft{background:#FDE3EB;color:var(--pink)}.gbpages .soft:hover{background:#FBD3DF}.gbpages .soft[disabled]{opacity:.4;cursor:default}
 .gbe{display:flex;gap:8px;align-items:flex-start}.gbe b{font:600 17px Fredoka,sans-serif}.gbe small{display:block;color:var(--soft);font-size:14px;margin-top:2px;overflow-wrap:anywhere}
 /* cafe radio: a cute pink retro radio that stays with you while you scroll */
 .radio{position:fixed;left:calc(16px + env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:8;width:min(380px,calc(100vw - 32px));padding-top:30px}
@@ -195,7 +197,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/03 i</div>
+<div id="ver">cafe website · version 11/04 a</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -372,14 +374,21 @@ function passportHTML() {
       <p class="hint center">one stamp a day, here or with !checkin on stream (they share the same passport)</p>
     </div></div>`;
 }
+const GB_PER_PAGE = 10;
+let gbPage = 0;
 async function renderGuestbook() {
-  const { data } = await sb.from("cafe_lists").select("login,display,gb_msg,gb_signed_at").not("gb_signed_at", "is", null).order("gb_signed_at", { ascending: false }).limit(60);
+  const { data } = await sb.from("cafe_lists").select("login,display,gb_msg,gb_signed_at").not("gb_signed_at", "is", null).order("gb_signed_at", { ascending: false }).limit(500);
   const list = (data || []).filter(r => r.gb_signed_at).sort((a, b) => b.gb_signed_at.localeCompare(a.gb_signed_at));
   const signed = mine && mine.gb_signed_at;
   $("guestbook").innerHTML = `<div class="gbcard"><div class="gbtitle">🌸 miss boba's guestbook 🌸</div>
     ${me && mine ? `<form class="gbsign" id="gbForm"><input id="gbNote" maxlength="200" placeholder="leave a note for miss boba (optional)" value="${signed ? esc(mine.gb_msg || "") : ""}"><button class="big">${signed ? "update my note" : "sign"}</button></form>` : ""}
-    <div class="gblist">${list.length ? list.map(r => `<div class="gbe"><span>🌸</span><div><b>${esc(r.display || r.login)}</b>${r.gb_msg ? `<small>"${esc(r.gb_msg)}"</small>` : ""}</div></div>`).join("") : `<div class="empty">no signatures yet. be the first ♡</div>`}</div>
+    ${(() => { const pages = Math.max(1, Math.ceil(list.length / GB_PER_PAGE)); gbPage = Math.min(gbPage, pages - 1); window.gbPages = pages; return ""; })()}
+    <div class="gblist">${list.length ? list.slice(gbPage * GB_PER_PAGE, gbPage * GB_PER_PAGE + GB_PER_PAGE).map(r => `<div class="gbe"><span>🌸</span><div><b>${esc(r.display || r.login)}</b>${r.gb_msg ? `<small>"${esc(r.gb_msg)}"</small>` : ""}</div></div>`).join("") : `<div class="empty">no signatures yet. be the first ♡</div>`}</div>
+    ${window.gbPages > 1 ? `<div class="gbpages"><button class="soft" id="gbPrev" ${gbPage === 0 ? "disabled" : ""}>‹ previous</button><span>page ${gbPage + 1} of ${window.gbPages}</span><button class="soft" id="gbNext" ${gbPage >= window.gbPages - 1 ? "disabled" : ""}>next ›</button></div>` : ""}
     <p class="hint center">${list.length} ${list.length === 1 ? "signature" : "signatures"} · you can also sign on stream with !sign</p></div>`;
+  const pv = $("gbPrev"), nx = $("gbNext");
+  if (pv) pv.onclick = () => { gbPage = Math.max(0, gbPage - 1); renderGuestbook(); };
+  if (nx) nx.onclick = () => { gbPage = Math.min(window.gbPages - 1, gbPage + 1); renderGuestbook(); };
   const f = $("gbForm"); if (f) f.onsubmit = e => { e.preventDefault(); signGuestbook($("gbNote").value); };
 }
 
