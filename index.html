@@ -104,6 +104,14 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .rlist .rt{flex:1;min-width:0;font-size:17px;overflow-wrap:anywhere}.rlist .rw{font:600 13px Fredoka,sans-serif;color:#3E8E5A;background:#E3F3E6;border-radius:999px;padding:3px 10px;flex:none}
 .radd{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.radd input,.radd select{font:500 15px Fredoka,sans-serif;padding:10px 12px;border:2px solid #EADBC8;border-radius:12px;background:#fff;color:var(--ink)}
 .radd #repText{flex:1 1 200px;min-width:0}.radd .big{padding:10px 16px;font-size:16px}
+.shelf{margin-top:24px;background:var(--cream);border-radius:18px;padding:14px 16px;box-shadow:0 5px 0 rgba(0,0,0,.3),inset 0 0 0 2px #EFE3D3}
+.shelf .shd{font:700 26px/1 Gaegu,cursive;color:#5A3826;margin:2px 4px 10px}.shelf .shd span{font:500 13px Fredoka,sans-serif;color:var(--soft);margin-left:8px}
+.nookviz{display:block;width:100%;height:auto;margin:0 0 12px;background:linear-gradient(#F6E7D3,#EFDCC3);border-radius:12px}
+.shcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media (max-width:620px){.shcols{grid-template-columns:1fr}}
+.shcols h4{margin:0 0 6px;font:700 21px Gaegu,cursive;color:var(--pink)}.shcols h4.fin{color:#3E8E5A}
+.bkr{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1.5px dashed #EADBC8}.bkr i{width:9px;height:26px;border-radius:2px;flex:none}
+.bkr .bt{flex:1;min-width:0;font:500 16px/1.2 Fredoka,sans-serif;overflow-wrap:anywhere}.bkr .bt small{display:block;color:var(--soft);font-size:12.5px}
+.bkr .soft{padding:5px 10px;font-size:13px}.bkr .btn.x{background:none;border:0;color:#B49A84;font-size:20px;cursor:pointer;padding:2px 6px}
 .passport{margin-top:26px;background:#F7A8C4;border-radius:22px;padding:9px;box-shadow:0 6px 0 rgba(0,0,0,.3)}
 .passport .pin{background:var(--cream);border-radius:15px;padding:16px 18px 14px;outline:2px dashed #F2C3D2;outline-offset:-7px}
 .passport .ph{display:flex;align-items:center;gap:10px;padding:0 4px 10px;border-bottom:2px dashed #F2D6DF}
@@ -197,7 +205,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/04 a</div>
+<div id="ver">cafe website · version 11/04 f</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -226,6 +234,7 @@ function demoClient() {
     pearlpanda: { login: "pearlpanda", twitch_id: "3", display: "pearlpanda", tasks: [{ text: "read 20 pages", done: false }, { text: "email boss", done: true }], current: 0, pearls_today: 5 },
   };
   rows.kyayu_.repeats = [{ time: "09:00", text: "stretch", last: "", tz: "Asia/Singapore", tzLabel: "SGT" }, { time: "00:00", text: "pay rent", monthDay: 15, last: "" }];
+  rows.kyayu_.books = { reading: [{ t: "The House in the Cerulean Sea", at: Date.now() - 6 * 86400e3 }], finished: [{ t: "Legends & Lattes", at: Date.now() - 20 * 86400e3, done: Date.now() - 4 * 86400e3 }, { t: "The Midnight Library", at: Date.now() - 40 * 86400e3, done: Date.now() - 25 * 86400e3 }] };
   rows.kyayu_.checkin = { total: 14, stamps: 4, cards: 1, streak: 3, last: "2000-01-01", display: "kyayu_" };
   rows.pearlpanda.gb_msg = "love this cafe so much ♡"; rows.pearlpanda.gb_signed_at = new Date(Date.now() - 86400000).toISOString();
   rows.lilmissboba.gb_msg = ""; rows.lilmissboba.gb_signed_at = new Date(Date.now() - 2 * 86400000).toISOString();
@@ -341,6 +350,56 @@ function repeatsHTML() {
       <p class="hint">times are in your time zone (${esc(tzShort(MY_TZ) || MY_TZ)}). it pops onto your list at that time, even when the stream is off.</p>` : ""}
   </div>`;
 }
+/* ---------- my bookshelf (only you can see yours) ---------- */
+const BOOK_COLORS = ["#E8A0A0", "#A9CDF5", "#C9B6F2", "#A8DDB5", "#FFD98A", "#FFB99A", "#F7A8C4", "#8FB3D9", "#D9A15A", "#B8D99A", "#F2C3D2", "#BFD9F2"];
+const strHash = t => { let h = 0; for (const ch of String(t).toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+const bookColor = t => BOOK_COLORS[strHash(t) % BOOK_COLORS.length];
+const md = at => { const d = new Date(at); return `${d.getMonth() + 1}/${d.getDate()}`; };
+const BOOKS_PER_PAGE = 8;
+let finPage = 0;
+function shelfPatch(fn, msg) { mutateRow(row => { const b = row.books && Array.isArray(row.books.reading) ? row.books : { reading: [], finished: [] }; if (fn(b) === false) return null; return { books: b }; }, msg); }
+function addBook(title) {
+  title = title.trim().replace(/^["']|["']$/g, "").slice(0, 80); if (!title) return;
+  shelfPatch(b => { if (b.reading.length >= 5) { toast("max 5 books at once, finish one first"); return false; } if (b.reading.some(x => x.t.toLowerCase() === title.toLowerCase())) { toast("already on your list 📖"); return false; } b.reading.push({ t: title, at: Date.now() }); }, "added to your shelf 📖");
+}
+function addFinished(title) {
+  title = title.trim().replace(/^["']|["']$/g, "").slice(0, 80); if (!title) return;
+  finPage = 0; shelfPatch(b => { const now = Date.now(); b.finished.push({ t: title, at: now, done: now }); }, "added to your finished books ✨📚");
+}
+function finishBook(i) { finPage = 0; shelfPatch(b => { const x = b.reading.splice(i, 1)[0]; if (!x) return false; x.done = Date.now(); b.finished.push(x); }, "finished a book! ✨📚"); }
+function removeBook(list, i) { shelfPatch(b => { if (!b[list][i]) return false; b[list].splice(i, 1); }, "taken off your shelf"); }
+function nookSVG(b) {
+  const fin = b.finished.slice(-28), W = 560, spines = []; let x = 22;
+  fin.forEach((bk, i) => {
+    const w = 11 + strHash(bk.t + i) % 5, h = 44 + strHash(bk.t) % 16, tilt = i === fin.length - 1 && fin.length > 3 ? ` transform="rotate(12 ${x + w} 84)"` : "";
+    spines.push(`<g${tilt}><title>${esc(bk.t)}</title><rect x="${x}" y="${84 - h}" width="${w}" height="${h}" rx="2" fill="${bookColor(bk.t)}"/><path d="M${x + 2} ${84 - h + 7}h${w - 4}M${x + 2} 76h${w - 4}" stroke="#fff" stroke-opacity=".6" stroke-width="1.4"/></g>`);
+    x += w + 2;
+  });
+  if (!fin.length) spines.push(`<text x="24" y="70" font-family="Gaegu, cursive" font-weight="700" font-size="20" fill="#B49A84">your finished books will stand here ♡</text>`);
+  const end = Math.max(x + 4, fin.length ? 0 : 380);
+  const stack = b.reading.slice(0, 5).map((bk, i) => `<g><title>reading: ${esc(bk.t)}</title><rect x="${-34 + (i % 2) * 3}" y="${-12 * (i + 1)}" width="${68 - (i % 2) * 6}" height="12" rx="2.5" fill="${bookColor(bk.t)}"/><path d="M${-30 + (i % 2) * 3} ${-12 * (i + 1) + 6}h${60 - (i % 2) * 6}" stroke="#fff" stroke-opacity=".5" stroke-width="1.2"/></g>`).join("");
+  const ribbon = b.reading.length ? `<path d="M14 ${-12 * Math.min(5, b.reading.length)}v16l3-3 3 3v-16" fill="#E26A87"/>` : "";
+  return `<svg class="nookviz" viewBox="0 0 ${W} 96" preserveAspectRatio="xMidYMax meet" role="img" aria-label="your bookshelf">
+    <rect x="4" y="84" width="${W - 8}" height="9" rx="3" fill="#8A5A3C"/><rect x="4" y="84" width="${W - 8}" height="3" rx="1.5" fill="#A8745A"/>
+    ${fin.length ? `<path d="M10 84v-34h9v34z" fill="#A8745A"/><path d="M${end} 84v-34h9v34z" fill="#A8745A"/>` : ""}
+    ${spines.join("")}
+    <g transform="translate(${W - 60} 84)">${stack}${ribbon}</g>
+  </svg>`;
+}
+function bookshelfHTML() {
+  const b = mine.books && Array.isArray(mine.books.reading) ? mine.books : { reading: [], finished: [] }, fin = b.finished.map((x, i) => ({ x, i })).reverse();
+  const finPages = Math.max(1, Math.ceil(fin.length / BOOKS_PER_PAGE)); finPage = Math.min(finPage, finPages - 1);
+  const shown = fin.slice(finPage * BOOKS_PER_PAGE, finPage * BOOKS_PER_PAGE + BOOKS_PER_PAGE);
+  return `<div class="card shelf"><div class="shd">📚 my book nook <span>only you can see this</span></div>
+    ${nookSVG(b)}
+    <div class="shcols">
+      <div><h4>currently reading</h4>${b.reading.length ? b.reading.map((x, i) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>started ${md(x.at)}</small></div><button class="soft" data-fin="${i}">finished ✓</button><button class="btn x" data-rmr="${i}" aria-label="remove">×</button></div>`).join("") : `<p class="empty">nothing yet ♡ add the book you're reading below</p>`}
+        ${b.reading.length < 5 ? `<form class="radd" id="bookForm"><input id="bookTitle" maxlength="80" placeholder="add a book you're reading" autocomplete="off"><button class="big">add</button></form>` : ""}</div>
+      <div><h4 class="fin">finished ✓ ${fin.length ? `· ${fin.length}` : ""}</h4>${fin.length ? shown.map(({ x, i }) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>finished ${md(x.done)}</small></div><button class="btn x" data-rmf="${i}" aria-label="remove">×</button></div>`).join("") + (finPages > 1 ? `<div class="gbpages"><button class="soft" id="finPrev" ${finPage === 0 ? "disabled" : ""}>‹ previous</button><span>page ${finPage + 1} of ${finPages}</span><button class="soft" id="finNext" ${finPage >= finPages - 1 ? "disabled" : ""}>next ›</button></div>` : "") : `<p class="empty">your finished books will live here</p>`}
+        <form class="radd" id="doneForm"><input id="doneTitle" maxlength="80" placeholder="add a book you finished" autocomplete="off"><button class="big">add</button></form></div>
+    </div>
+    <p class="hint">same shelf as <b>!reading</b> and <b>!finished</b> on stream · hover a book to see its title</p></div>`;
+}
 /* ---------- daily check-in (boba passport) and the guestbook ---------- */
 function cafeDay(d = new Date()) { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: CAFE_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).forEach(x => p[x.type] = x.value); return `${p.year}-${p.month}-${p.day}`; }
 let lastCheckin = null;
@@ -394,7 +453,7 @@ async function renderGuestbook() {
 
 /* ---------- "i'm here" ping so others can see who's working on the website ---------- */
 async function hereNow() {
-  if (!me || !mine || DEMO || document.visibilityState !== "visible") return;
+  if (!me || !mine || DEMO) return;
   try { await sb.from("cafe_lists").update({ web_seen_at: new Date().toISOString() }).eq("login", mine.login); } catch (e) {}
 }
 /* ---------- what you can do ---------- */
@@ -464,7 +523,16 @@ function render() {
     $("repDay").onchange = () => { repForm.day = $("repDay").value; };
     rf.onsubmit = e => { e.preventDefault(); addRepeat($("repText").value, $("repTime").value, $("repType").value, $("repDay").value); };
   }
+  app.insertAdjacentHTML("beforeend", bookshelfHTML());   // book nook first, then the boba passport
   app.insertAdjacentHTML("beforeend", passportHTML());
+  app.querySelectorAll("[data-fin]").forEach(b => b.onclick = () => finishBook(+b.dataset.fin));
+  app.querySelectorAll("[data-rmr]").forEach(b => b.onclick = () => removeBook("reading", +b.dataset.rmr));
+  app.querySelectorAll("[data-rmf]").forEach(b => b.onclick = () => removeBook("finished", +b.dataset.rmf));
+  const bf = $("bookForm"); if (bf) bf.onsubmit = e => { e.preventDefault(); addBook($("bookTitle").value); };
+  const df = $("doneForm"); if (df) df.onsubmit = e => { e.preventDefault(); addFinished($("doneTitle").value); };
+  const fp = $("finPrev"), fn = $("finNext");
+  if (fp) fp.onclick = () => { finPage = Math.max(0, finPage - 1); render(); };
+  if (fn) fn.onclick = () => { finPage++; render(); };
   const ck = $("checkin"); if (ck) ck.onclick = () => checkIn();
   $("out").onclick = () => sb.auth.signOut();
   const cd = $("clearDone"); if (cd) cd.onclick = () => clearDone();
@@ -478,7 +546,7 @@ function render() {
 }
 const miniTicket = r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current;
   const body = r.status === "lurking" && r.in_cafe ? `<li>☕ cozy lurking by the window</li>` : t.length ? t.slice(0, 6).map((x, i) => `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${cur === i ? " ★" : ""}</li>`).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
-  return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span>${r.web ? ` <span class="pill web" title="also on the website">💻</span>` : ""}</div><ul>${body}</ul></div></div>`; };
+  return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span>${r.web ? ` <span class="pill web" title="also on the website">💻</span>` : ""}${r.you ? ` <span class="pill pink">you ♡</span>` : ""}</div><ul>${body}</ul></div></div>`; };
 function pinboard(box, rows) {
   const n = Math.max(1, Math.floor((box.clientWidth + 18) / 238)), cols = Array.from({ length: n }, () => ({ h: 0, html: [] }));
   rows.forEach(r => {
@@ -489,10 +557,13 @@ function pinboard(box, rows) {
 }
 let webHere = new Set();   // people with the website open right now
 async function renderWebNow(live) {
-  const since = new Date(Date.now() - 3 * 60000).toISOString();
+  const since = new Date(Date.now() - 5 * 60000).toISOString();
   let { data, error } = await sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,web_seen_at,in_cafe").gt("web_seen_at", since).limit(60);
   if (error) ({ data, error } = await sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,web_seen_at").gt("web_seen_at", since).limit(60));
-  const all = error ? [] : (data || []).filter(r => r.login !== "__cafe__" && (!mine || r.login !== mine.login));
+  const all = error ? [] : (data || []).filter(r => r.login !== "__cafe__");
+  if (mine && !all.some(r => r.login === mine.login)) all.unshift(Object.assign({}, mine));   // you're here too
+  all.forEach(r => { if (mine && r.login === mine.login) r.you = true; });
+  all.sort((a, b) => (b.you ? 1 : 0) - (a.you ? 1 : 0));
   webHere = new Set(all.map(r => r.login));
   const list = all.filter(r => !(live && (window.cafeHere ? window.cafeHere.has(r.login) : r.in_cafe)));   // people who are in the cafe on stream show up there instead (with a 💻)
   $("webTitle").hidden = !list.length;
@@ -644,7 +715,7 @@ $("twbar").href = TWITCH_URL;
   else { const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); sb.auth.onAuthStateChange(ev => { if (ev === "SIGNED_IN" || ev === "SIGNED_OUT") setTimeout(boot, 0); }); }
   await boot();
   setInterval(() => { if (me && mine) addDueRepeats(); }, 60000);
-  setInterval(hereNow, 60000); document.addEventListener("visibilitychange", hereNow);   // repeating tasks pop on at their time while the page is open
+  setInterval(hereNow, 45000); document.addEventListener("visibilitychange", hereNow); window.addEventListener("focus", hereNow);   // repeating tasks pop on at their time while the page is open
   setInterval(async () => { if (me && editing < 0 && document.activeElement !== $("newTask") && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#repForm"))) { mine = await loadMine(); render(); } renderOthers(); }, 10000);   // picks up changes made in the cafe
 })();
 </script>
