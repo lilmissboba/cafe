@@ -211,7 +211,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/04 k</div>
+<div id="ver">cafe website · version 11/04 l</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -715,10 +715,19 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
 })();
 
 /* ---------- cafe radio ---------- */
-let radioVol = 100, duckT = null, ducked = false;
-window.addEventListener("message", e => {   // the player tells us its volume, so we can put it back exactly
+let radioVol = 100, duckT = null, ducked = false, shuffled = false;
+window.addEventListener("message", e => {   // the player tells us its volume (so we can put it back exactly) and how long the playlist is
   if (!/youtube/.test(e.origin)) return;
-  try { const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; if (d && d.info && typeof d.info.volume === "number" && !ducked) radioVol = d.info.volume; } catch (err) {}
+  try {
+    const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; if (!d || !d.info) return;
+    if (typeof d.info.volume === "number" && !ducked) radioVol = d.info.volume;
+    if (!shuffled && Array.isArray(d.info.playlist) && d.info.playlist.length > 1) {   // shuffle: start on a random song, and keep the order shuffled
+      shuffled = true;
+      ytCmd("setShuffle", [true]);
+      ytCmd("playVideoAt", [Math.floor(Math.random() * d.info.playlist.length)]);
+      $("radio").classList.add("playing");
+    }
+  } catch (err) {}
 });
 const ytCmd = (func, args) => { const f = $("radioYT"); if (f) try { f.contentWindow.postMessage(JSON.stringify({ event: "command", func, args: args || [] }), "*"); } catch (e) {} };
 window.duckRadio = secs => {
