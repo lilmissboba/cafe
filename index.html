@@ -41,7 +41,9 @@ main{max-width:760px;margin:0 auto;padding:22px 16px 60px}
 .twbar{display:flex;align-items:center;gap:12px;margin-top:16px;padding:10px 12px 10px 16px;border-radius:16px;background:#F3EAFF;color:#4B2A82;text-decoration:none;box-shadow:0 4px 0 rgba(0,0,0,.25),inset 0 0 0 2px #D9C5FB;font:500 16px Fredoka,sans-serif}
 .twbar:hover{background:#ECDFFF}
 .twdot{width:10px;height:10px;border-radius:50%;background:#B9A6D6;flex:none}
-.twbar.live .twdot{background:#3FBF6A;box-shadow:0 0 0 3px #CFF0DA;animation:onair 1.6s ease-in-out infinite}
+.twbar:not(.live) .twdot{display:none}
+.twbar.live .twdot{background:#E8384F;box-shadow:0 0 0 3px #FBD0D6;animation:liveair 1.6s ease-in-out infinite}
+@keyframes liveair{50%{box-shadow:0 0 0 5px #FBD0D6}}
 .twtxt{flex:1;min-width:0}
 .twbtn{flex:none;background:#9146FF;color:#fff;border-radius:12px;padding:8px 14px;font-weight:600;box-shadow:0 3px 0 #6A2FD0}
 .ticket{position:relative;filter:drop-shadow(0 5px 0 rgba(0,0,0,.3))}
@@ -107,8 +109,12 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .shelf{margin-top:24px;background:var(--cream);border-radius:18px;padding:14px 16px;box-shadow:0 5px 0 rgba(0,0,0,.3),inset 0 0 0 2px #EFE3D3}
 .shelf .shd{font:700 26px/1 Gaegu,cursive;color:#5A3826;margin:2px 4px 10px}.shelf .shd span{font:500 13px Fredoka,sans-serif;color:var(--soft);margin-left:8px}
 .nookviz{display:block;width:100%;height:auto;margin:0 0 12px;background:linear-gradient(#F6E7D3,#EFDCC3);border-radius:12px}
-.shcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media (max-width:620px){.shcols{grid-template-columns:1fr}}
-.shcols h4{margin:0 0 6px;font:700 21px Gaegu,cursive;color:var(--pink)}.shcols h4.fin{color:#3E8E5A}
+.shcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.shcols > div{display:flex;flex-direction:column}   /* both "add" boxes line up at the bottom */
+.shcols > div > .radd{margin-top:auto;padding-top:12px}
+.shcols > div > .gbpages{margin-top:10px}@media (max-width:620px){.shcols{grid-template-columns:1fr}}
+.shcols h4{margin:0 0 6px;height:28px;display:flex;align-items:center;gap:6px;font:700 21px/1 Gaegu,cursive;color:var(--pink);white-space:nowrap}
+.shcols h4 .ck{font:600 16px/1 Fredoka,sans-serif}.shcols h4.fin{color:#3E8E5A}
 .bkr{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1.5px dashed #EADBC8}.bkr i{width:9px;height:26px;border-radius:2px;flex:none}
 .bkr .bt{flex:1;min-width:0;font:500 16px/1.2 Fredoka,sans-serif;overflow-wrap:anywhere}.bkr .bt small{display:block;color:var(--soft);font-size:12.5px}
 .bkr .soft{padding:5px 10px;font-size:13px}.bkr .btn.x{background:none;border:0;color:#B49A84;font-size:20px;cursor:pointer;padding:2px 6px}
@@ -167,7 +173,7 @@ main{padding-bottom:110px}
     <div class="line"></div>
     <p>your task ticket, open even when the stream isn't ♡ changes show up on your ticket in the cafe</p>
   </div>
-  <a class="twbar" id="twbar" target="_blank" rel="noopener"><span class="twdot"></span><span class="twtxt" id="twtxt">miss boba's cafe is also on twitch ♡ come co-work with us</span><span class="twbtn">visit on twitch</span></a>
+  <a class="twbar" id="twbar" target="_blank" rel="noopener"><span class="twdot"></span><span class="twtxt" id="twtxt">the cafe is closed for now ☾ follow to know when it opens ♡</span><span class="twbtn">follow on twitch</span></a>
   <div class="pomo" id="pomo">
     <div class="ptop"><span class="plabel" id="pLabel">focus time</span><span class="psess" id="pSess">session 1 of 4</span></div>
     <div class="ptime" id="pTime">50:00</div>
@@ -205,7 +211,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/04 f</div>
+<div id="ver">cafe website · version 11/04 j</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -393,9 +399,9 @@ function bookshelfHTML() {
   return `<div class="card shelf"><div class="shd">📚 my book nook <span>only you can see this</span></div>
     ${nookSVG(b)}
     <div class="shcols">
-      <div><h4>currently reading</h4>${b.reading.length ? b.reading.map((x, i) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>started ${md(x.at)}</small></div><button class="soft" data-fin="${i}">finished ✓</button><button class="btn x" data-rmr="${i}" aria-label="remove">×</button></div>`).join("") : `<p class="empty">nothing yet ♡ add the book you're reading below</p>`}
+      <div><h4>currently reading</h4>${b.reading.length ? b.reading.map((x, i) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>started ${md(x.at)}</small></div><button class="soft" data-fin="${i}">finished ✓</button><button class="btn x" data-rmr="${i}" aria-label="remove">×</button></div>`).join("") : `<p class="empty">nothing yet ♡</p>`}
         ${b.reading.length < 5 ? `<form class="radd" id="bookForm"><input id="bookTitle" maxlength="80" placeholder="add a book you're reading" autocomplete="off"><button class="big">add</button></form>` : ""}</div>
-      <div><h4 class="fin">finished ✓ ${fin.length ? `· ${fin.length}` : ""}</h4>${fin.length ? shown.map(({ x, i }) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>finished ${md(x.done)}</small></div><button class="btn x" data-rmf="${i}" aria-label="remove">×</button></div>`).join("") + (finPages > 1 ? `<div class="gbpages"><button class="soft" id="finPrev" ${finPage === 0 ? "disabled" : ""}>‹ previous</button><span>page ${finPage + 1} of ${finPages}</span><button class="soft" id="finNext" ${finPage >= finPages - 1 ? "disabled" : ""}>next ›</button></div>` : "") : `<p class="empty">your finished books will live here</p>`}
+      <div><h4 class="fin">finished <span class="ck">✓</span>${fin.length ? ` · ${fin.length}` : ""}</h4>${fin.length ? shown.map(({ x, i }) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>finished ${md(x.done)}</small></div><button class="btn x" data-rmf="${i}" aria-label="remove">×</button></div>`).join("") + (finPages > 1 ? `<div class="gbpages"><button class="soft" id="finPrev" ${finPage === 0 ? "disabled" : ""}>‹ previous</button><span>page ${finPage + 1} of ${finPages}</span><button class="soft" id="finNext" ${finPage >= finPages - 1 ? "disabled" : ""}>next ›</button></div>` : "") : `<p class="empty">none yet ♡</p>`}
         <form class="radd" id="doneForm"><input id="doneTitle" maxlength="80" placeholder="add a book you finished" autocomplete="off"><button class="big">add</button></form></div>
     </div>
     <p class="hint">same shelf as <b>!reading</b> and <b>!finished</b> on stream · hover a book to see its title</p></div>`;
@@ -580,8 +586,8 @@ async function renderOthers() {   // when the stream's on: everyone in the cafe 
   await renderWebNow(!!open).catch(() => {});
   window.streamPomo = open && beat.pomo && beat.pomo.phase && beat.pomo.phase !== "idle" ? beat.pomo : null;
   $("twbar").classList.toggle("live", !!open);
-  $("twtxt").textContent = open ? "the cafe is open right now! come co-work with us on twitch ♡" : "miss boba's cafe is also on twitch ♡ come co-work with us";
-  document.querySelector("#twbar .twbtn").textContent = open ? "join on twitch" : "visit on twitch";
+  $("twtxt").textContent = open ? "the cafe is open right now! come co-work with us on twitch ♡" : "the cafe is closed for now ☾ follow to know when it opens ♡";
+  document.querySelector("#twbar .twbtn").textContent = open ? "join on twitch" : "follow on twitch";
   const here = open && beat.pomo && Array.isArray(beat.pomo.here) ? beat.pomo.here : null;   // the cafe's own list of who's sitting in it right now
   let q = sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,updated_at,in_cafe,status");
   q = open ? (here ? q.in("login", here.length ? here : ["-"]).limit(120) : q.eq("in_cafe", true).limit(80)) : q.order("updated_at", { ascending: false }).limit(120);
