@@ -211,7 +211,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/04 j</div>
+<div id="ver">cafe website · version 11/04 k</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -628,6 +628,10 @@ async function bootInner() {
 }
 
 $("twbar").href = TWITCH_URL;
+/* ---------- sound: unlocked by the first tap or click, so the chime can play later even if you're in another tab ---------- */
+let cafeCtx = null;
+window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || window.webkitAudioContext)());
+["pointerdown", "keydown", "touchstart"].forEach(ev => document.addEventListener(ev, () => { try { const c = window.cafeAudio(); if (c.state === "suspended") c.resume(); } catch (e) {} }, { passive: true }));
 /* ---------- your own pomodoro timer (saved on this device, keeps going if you refresh) ---------- */
 (() => {
   const KEY = "bobaPomo", el = id => $(id);
@@ -637,12 +641,18 @@ $("twbar").href = TWITCH_URL;
   const total = () => (st.phase === "focus" ? st.f : st.b) * 60;
   const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   let ctx;
-  function chime(up) {   // a soft cafe chime
+  function chime(up) {   // a cafe chime you can hear over the radio
     if (!st.sound) return;
-    try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); const t0 = ctx.currentTime;
-      (up ? [659, 784, 988] : [988, 784, 659]).forEach((f, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = "sine"; o.frequency.value = f;
-        g.gain.setValueAtTime(0, t0 + i * .18); g.gain.linearRampToValueAtTime(.18, t0 + i * .18 + .02); g.gain.exponentialRampToValueAtTime(.001, t0 + i * .18 + 1.1);
-        o.connect(g).connect(ctx.destination); o.start(t0 + i * .18); o.stop(t0 + i * .18 + 1.2); }); } catch (e) {}
+    try { ctx = window.cafeAudio(); if (ctx.state === "suspended") ctx.resume();
+      window.duckRadio && window.duckRadio(3.8);   // the radio dips while the chime rings
+      const t0 = ctx.currentTime + .25;
+      for (let rep = 0; rep < 2; rep++) (up ? [659, 784, 988] : [988, 784, 659]).forEach((f, i) => {
+        const at = t0 + rep * .9 + i * .18;
+        [[f, .32, "sine"], [f * 2, .07, "triangle"]].forEach(([fr, vol, type]) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.value = fr;
+          g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(vol, at + .015); g.gain.exponentialRampToValueAtTime(.001, at + 1.3);
+          o.connect(g).connect(ctx.destination); o.start(at); o.stop(at + 1.4); });
+      });
+    } catch (e) {}
   }
   function nextPart() {
     if (st.phase === "focus") {
@@ -685,7 +695,7 @@ $("twbar").href = TWITCH_URL;
   el("pStart").onclick = () => {
     if (st.done) { st.done = false; st.sess = 1; st.phase = "focus"; st.left = st.f * 60; }
     if (st.running) { st.running = false; st.left = Math.max(0, Math.round((st.endAt - Date.now()) / 1000)); }
-    else { st.running = true; st.endAt = Date.now() + st.left * 1000; try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); } catch (e) {} }
+    else { st.running = true; st.endAt = Date.now() + st.left * 1000; try { ctx = window.cafeAudio(); ctx.resume(); } catch (e) {} }
     save(); draw();
   };
   el("pSkip").onclick = () => { const was = st.running; st.running = true; nextPart(); if (!was) st.running = false; save(); draw(); };
@@ -705,12 +715,24 @@ $("twbar").href = TWITCH_URL;
 })();
 
 /* ---------- cafe radio ---------- */
+let radioVol = 100, duckT = null, ducked = false;
+window.addEventListener("message", e => {   // the player tells us its volume, so we can put it back exactly
+  if (!/youtube/.test(e.origin)) return;
+  try { const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; if (d && d.info && typeof d.info.volume === "number" && !ducked) radioVol = d.info.volume; } catch (err) {}
+});
+const ytCmd = (func, args) => { const f = $("radioYT"); if (f) try { f.contentWindow.postMessage(JSON.stringify({ event: "command", func, args: args || [] }), "*"); } catch (e) {} };
+window.duckRadio = secs => {
+  if (!$("radioYT")) return;
+  if (!ducked) { ducked = true; ytCmd("setVolume", [Math.round(radioVol * .25)]); }
+  clearTimeout(duckT); duckT = setTimeout(() => { ytCmd("setVolume", [radioVol]); ducked = false; }, secs * 1000);
+};
 (() => {
   const r = $("radio"), btn = $("radioBtn");
   if (!YT_PLAYLIST) { r.remove(); return; }
   btn.onclick = () => {
     if (!$("radioFrame").firstChild)   // the player only loads the first time you open it, so the page stays quick
-      $("radioFrame").innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(YT_PLAYLIST)}&loop=1&playsinline=1" title="cafe radio" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      $("radioFrame").innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/videoseries?list=${encodeURIComponent(YT_PLAYLIST)}&loop=1&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(location.origin)}" title="cafe radio" id="radioYT" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      const fr = $("radioYT"); fr.onload = () => { try { fr.contentWindow.postMessage(JSON.stringify({ event: "listening", id: "radio" }), "*"); } catch (e) {} };
     const open = r.classList.toggle("collapsed") === false;
     btn.setAttribute("aria-expanded", open); r.classList.add("playing");
   };
