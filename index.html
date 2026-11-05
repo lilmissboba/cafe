@@ -234,7 +234,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/05 d</div>
+<div id="ver">cafe website · version 11/05 e</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -769,8 +769,14 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
     for (const m of marks) { if (m.x < i) continue; html += plain(chars.slice(i, m.x).join("")); html += `<img class="emote" alt="${esc(chars.slice(m.x, m.y + 1).join(""))}" src="https://static-cdn.jtvnw.net/emoticons/v2/${m.id}/default/dark/2.0">`; i = m.y + 1; }
     return html + plain(chars.slice(i).join(""));
   }
-  function addMsg({ id, login, name, color, text, emotes, uid }) {
+  const SAVE_KEY = "cafeChatSaved", seen = new Set();
+  let saved = []; try { saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "[]"); } catch (e) {}
+  const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(saved.slice(-MAX))); } catch (e) {} };
+  function addMsg(msg) {
+    const { id, login, name, color, text, emotes, uid } = msg;
     if (!text || (HIDE_COMMANDS && /^\s*!/.test(text))) return;
+    if (id) { if (seen.has(id)) return; seen.add(id); }   // never show the same message twice
+    if (!msg.restored) { saved.push({ id, login, name, color, text, emotes, uid, at: msg.at || Date.now() }); if (saved.length > MAX) saved = saved.slice(-MAX); persist(); }
     const near = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
     const el = document.createElement("div");
     el.className = "cm" + (login === HOST ? " host" : login === BOT ? " bot" : "");
@@ -788,9 +794,17 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
     const m = rest.match(/^:(\S+) (\S+)(?: (\S+))?(?: :([\s\S]*))?$/); if (!m) return;
     const [, prefix, cmd, , trailing = ""] = m, login = prefix.split("!")[0];
     if (cmd === "PRIVMSG") { let text = trailing; const am = text.match(/^\u0001ACTION (.*)\u0001$/); if (am) text = am[1];
-      addMsg({ id: tags.id, login, name: tags["display-name"] || login, color: tags.color, text, emotes: tags.emotes, uid: tags["user-id"] }); }
-    else if (cmd === "CLEARMSG") { const el = list.querySelector(`.cm[data-id="${CSS.escape(tags["target-msg-id"] || "")}"]`); if (el) el.remove(); }
-    else if (cmd === "CLEARCHAT") { if (tags["target-user-id"]) list.querySelectorAll(`.cm[data-user="${CSS.escape(tags["target-user-id"])}"]`).forEach(e => e.remove()); else list.innerHTML = ""; }
+      addMsg({ id: tags.id, login, name: tags["display-name"] || login, color: tags.color, text, emotes: tags.emotes, uid: tags["user-id"], at: +tags["tmi-sent-ts"] || Date.now() }); }
+    else if (cmd === "CLEARMSG") { const mid = tags["target-msg-id"] || "", el = list.querySelector(`.cm[data-id="${CSS.escape(mid)}"]`); if (el) el.remove(); saved = saved.filter(x => x.id !== mid); persist(); }
+    else if (cmd === "CLEARCHAT") { const tu = tags["target-user-id"]; if (tu) { list.querySelectorAll(`.cm[data-user="${CSS.escape(tu)}"]`).forEach(e => e.remove()); saved = saved.filter(x => x.uid !== tu); } else { list.innerHTML = ""; saved = []; } persist(); }
+  }
+  async function loadHistory() {   // what was said while you were away (twitch itself doesn't keep chat history, so this uses a free recent-messages service)
+    if (DEMO) return;
+    try {
+      const r = await fetch(`https://recent-messages.robotty.de/api/v2/recent-messages/${HOST}?limit=${MAX}`);
+      if (!r.ok) return; const j = await r.json();
+      (j.messages || []).forEach(line => { try { onLine(line); } catch (e) {} });
+    } catch (e) {}
   }
   function connectReader() {   // read-only, no login needed
     if (DEMO) return demoChat();
@@ -834,7 +848,12 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
     setTimeout(() => addMsg({ id: "late2", login: "pearlpanda", name: "pearlpanda", color: "#1E90FF", text: "yes!! starting now" }), 7500);
   }
   let started = false, loaded = false;
-  const start = () => { if (started) return; started = true; connectReader(); connectSender(); setTimeout(() => loaded = true, 2500); };   // older messages that arrive at first don't count as new
+  const start = async () => {
+    if (started) return; started = true;
+    saved.forEach(m => addMsg(Object.assign({}, m, { restored: true })));   // the chat you saw last time, right away
+    await loadHistory();                                                   // plus anything said while you were gone
+    connectReader(); connectSender(); setTimeout(() => loaded = true, 2500);   // older messages that arrive at first don't count as new
+  };
   const toggle = open => { box.classList.toggle("collapsed", !open); btn.setAttribute("aria-expanded", open); if (open) { start(); setUnread(0); list.scrollTop = list.scrollHeight; showForm(); } };
   btn.onclick = () => toggle(box.classList.contains("collapsed"));
   setTimeout(start, 1500);   // starts listening when the page loads, so the bubble can tell you when someone talks
