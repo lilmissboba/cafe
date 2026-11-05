@@ -234,7 +234,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/05 e</div>
+<div id="ver">cafe website · version 11/05 g</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -753,7 +753,7 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
   const box = $("chatbox"), btn = $("chatBtn"), list = $("chatList"), form = $("chatForm"), input = $("chatInput"), note = $("chatNote"), dot = $("chatDot");
   let unread = 0;
   const setUnread = n => { unread = n; dot.classList.toggle("on", n > 0); };   // red dot = new messages while it's closed
-  const BOT = "missbobacafe", HOST = TWITCH_CHANNEL, HIDE_COMMANDS = true, MAX = 80;
+  const BOT = "missbobacafe", HOST = TWITCH_CHANNEL, HIDE_COMMANDS = false, MAX = 80;   // commands like !task show in the chat too
   const PASTELS = ["#F7B6C8", "#BAD5FF", "#BDE8C9", "#FFE3A1", "#D6C2F2", "#FFC9A8", "#A8E6E0", "#F9D0E8"];
   function nameColor(hex, key) {   // keep their twitch color, but make it readable on the chalkboard
     if (!/^#[0-9a-f]{6}$/i.test(hex || "")) { let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0; hex = PASTELS[h % PASTELS.length]; }
@@ -776,14 +776,16 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
     const { id, login, name, color, text, emotes, uid } = msg;
     if (!text || (HIDE_COMMANDS && /^\s*!/.test(text))) return;
     if (id) { if (seen.has(id)) return; seen.add(id); }   // never show the same message twice
-    if (!msg.restored) { saved.push({ id, login, name, color, text, emotes, uid, at: msg.at || Date.now() }); if (saved.length > MAX) saved = saved.slice(-MAX); persist(); }
+    if (!msg.restored) { saved.push({ id, login, name, color, text, emotes, uid, at: msg.at || Date.now() }); saved.sort((a, b) => a.at - b.at); if (saved.length > MAX) saved = saved.slice(-MAX); persist(); }
     const near = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
     const el = document.createElement("div");
     el.className = "cm" + (login === HOST ? " host" : login === BOT ? " bot" : "");
-    el.dataset.id = id || ""; el.dataset.user = uid || login;
+    el.dataset.id = id || ""; el.dataset.user = uid || login; el.dataset.at = msg.at || Date.now();
     el.innerHTML = `<span class="cn" style="color:${login === HOST ? "#F7B6C8" : login === BOT ? "#D6C2F2" : nameColor(color, login)}">${esc(name)}</span><div class="cb">${withEmotes(text, emotes)}</div>`;
-    list.appendChild(el); while (list.children.length > MAX) list.firstElementChild.remove();
-    if (near) list.scrollTop = list.scrollHeight;
+    const at = +el.dataset.at, after = [...list.children].find(c => +c.dataset.at > at);   // keep everything in time order
+    if (after) list.insertBefore(el, after); else list.appendChild(el);
+    while (list.children.length > MAX) list.firstElementChild.remove();
+    if (near || !loaded) list.scrollTop = list.scrollHeight;
     if (box.classList.contains("collapsed") && login !== myLogin && loaded) setUnread(unread + 1);   // closed: the bubble blinks red
   }
   const parseTags = raw => { const t = {}; raw.split(";").forEach(kv => { const i = kv.indexOf("="); t[kv.slice(0, i)] = kv.slice(i + 1).replace(/\\s/g, " ").replace(/\\:/g, ";").replace(/\\\\/g, "\\"); }); return t; };
@@ -801,7 +803,8 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
   async function loadHistory() {   // what was said while you were away (twitch itself doesn't keep chat history, so this uses a free recent-messages service)
     if (DEMO) return;
     try {
-      const r = await fetch(`https://recent-messages.robotty.de/api/v2/recent-messages/${HOST}?limit=${MAX}`);
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch(`https://recent-messages.robotty.de/api/v2/recent-messages/${HOST}?limit=${MAX}`, { signal: ctl.signal });
       if (!r.ok) return; const j = await r.json();
       (j.messages || []).forEach(line => { try { onLine(line); } catch (e) {} });
     } catch (e) {}
@@ -848,11 +851,12 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
     setTimeout(() => addMsg({ id: "late2", login: "pearlpanda", name: "pearlpanda", color: "#1E90FF", text: "yes!! starting now" }), 7500);
   }
   let started = false, loaded = false;
-  const start = async () => {
+  const start = () => {
     if (started) return; started = true;
-    saved.forEach(m => addMsg(Object.assign({}, m, { restored: true })));   // the chat you saw last time, right away
-    await loadHistory();                                                   // plus anything said while you were gone
-    connectReader(); connectSender(); setTimeout(() => loaded = true, 2500);   // older messages that arrive at first don't count as new
+    connectReader(); connectSender();                                      // live chat first, always
+    saved.forEach(m => addMsg(Object.assign({}, m, { restored: true })));   // the chat you saw last time
+    loadHistory();                                                         // plus anything said while you were gone (fills in by time)
+    setTimeout(() => loaded = true, 4000);                                 // older messages that arrive at first don't count as new
   };
   const toggle = open => { box.classList.toggle("collapsed", !open); btn.setAttribute("aria-expanded", open); if (open) { start(); setUnread(0); list.scrollTop = list.scrollHeight; showForm(); } };
   btn.onclick = () => toggle(box.classList.contains("collapsed"));
