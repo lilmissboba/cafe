@@ -137,6 +137,26 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .gbpages{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px;font:600 15px Fredoka,sans-serif;color:var(--soft)}
 .gbpages .soft{background:#FDE3EB;color:var(--pink)}.gbpages .soft:hover{background:#FBD3DF}.gbpages .soft[disabled]{opacity:.4;cursor:default}
 .gbe{display:flex;gap:8px;align-items:flex-start}.gbe b{font:600 17px Fredoka,sans-serif}.gbe small{display:block;color:var(--soft);font-size:14px;margin-top:2px;overflow-wrap:anywhere}
+/* cafe chat: your twitch chat, right on the website (bottom-right) */
+.chatbox{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:8;width:min(360px,calc(100vw - 32px));background:#2E3B33;border:6px solid #5A3826;border-radius:18px;box-shadow:0 6px 0 rgba(0,0,0,.3),0 12px 18px rgba(0,0,0,.3)}
+.chatbox .chead{width:100%;display:flex;align-items:center;gap:8px;border:0;background:none;color:#FBEFDD;font:700 22px/1 Gaegu,cursive;padding:9px 12px;cursor:pointer}
+.chatbox .ctag{font:500 12px Fredoka,sans-serif;color:#C9B8A2}.chatbox .carrow{margin-left:auto;font-size:12px;color:#F7B6C8;transition:transform .3s}
+.chatbox:not(.collapsed) .carrow{transform:rotate(180deg)}
+.chatbox .cframe{height:min(480px,60vh);border-radius:0 0 12px 12px;overflow:hidden;transition:height .3s}
+.chatbox.collapsed .cframe{height:0}
+.chatbox .cframe{display:flex;flex-direction:column}
+.chatbox .clist{flex:1;overflow-y:auto;padding:4px 14px 6px;scrollbar-width:thin;scrollbar-color:#5A6B60 transparent}
+.chatbox .cm{padding:6px 0 7px;border-bottom:2px dashed rgba(251,239,221,.12)}
+.chatbox .cn{font:700 20px/1.05 Gaegu,cursive}
+.chatbox .cb{font:500 15px/1.3 Fredoka,Huninn,sans-serif;color:#EAD9C0;overflow-wrap:anywhere;margin-top:1px}
+.chatbox .cm.host .cb{color:#F7C6D4}.chatbox .cm.bot .cb{color:#D6C2F2}
+.chatbox .cb .emote{height:1.6em;vertical-align:-.45em}.chatbox .cb .ping{color:#F7A8C4;font-weight:600}
+.chatbox .cnote{padding:0 12px}.chatbox .cnote:empty{display:none}.chatbox .cnote .soft{width:100%;margin:8px 0 10px;background:#9146FF;color:#fff}
+.chatbox .cform{display:flex;gap:8px;padding:8px 10px 10px}.chatbox .cform[hidden]{display:none}
+.chatbox .cform input{flex:1;min-width:0;font:500 15px Fredoka,sans-serif;padding:9px 12px;border:0;border-radius:12px;background:#FBEFDD;color:#4A2E1F}
+.chatbox .cform .big{padding:9px 14px;font-size:15px;background:#F7A8C4;color:#4A2E1F;box-shadow:0 3px 0 #C85A78}
+
+@media (max-width:760px){.chatbox{bottom:calc(90px + env(safe-area-inset-bottom,0px))}}
 /* cafe radio: a cute pink retro radio that stays with you while you scroll */
 .radio{position:fixed;left:calc(16px + env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:8;width:min(380px,calc(100vw - 32px));padding-top:30px}
 .radio .ant{position:absolute;left:44px;top:0;width:4px;height:44px;border-radius:2px;background:#C9A7B2;transform:rotate(-24deg);transform-origin:bottom center}
@@ -211,7 +231,15 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/04 l</div>
+<div id="ver">cafe website · version 11/05 b</div>
+<div class="chatbox collapsed" id="chatbox">
+  <button class="chead" id="chatBtn" aria-expanded="false">💬 cafe chat <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
+  <div class="cframe" id="chatFrame">
+    <div class="clist" id="chatList"></div>
+    <div class="cnote" id="chatNote"></div>
+    <form class="cform" id="chatForm" hidden><input id="chatInput" maxlength="450" placeholder="say something cozy…" autocomplete="off"><button class="big">send</button></form>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script type="module">
 /* ============ SETTINGS ============ */
@@ -220,6 +248,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const MAX_TASKS = 40;
 const MAX_REPEATS = 5, MAX_REPEATS_HOST = 10, HOST = "lilmissboba";   // same limits as the cafe
 const TWITCH_URL = "https://www.twitch.tv/lilmissboba";
+const TWITCH_CHANNEL = "lilmissboba";
 const YT_PLAYLIST = "PLAT_XughQA_w";      // your youtube playlist (the part after list= in the link)
 const CAFE_TIMEZONE = "Asia/Singapore";   // check-ins reset at midnight here (same as the cafe)
 const CARD_SIZE = 10;                      // stamps per boba passport
@@ -462,6 +491,7 @@ async function hereNow() {
   if (!me || !mine || DEMO) return;
   try { await sb.from("cafe_lists").update({ web_seen_at: new Date().toISOString() }).eq("login", mine.login); } catch (e) {}
 }
+const twitchLogin = () => sb.auth.signInWithOAuth({ provider: "twitch", options: { redirectTo: location.origin + location.pathname, scopes: "chat:read chat:edit" } });
 /* ---------- what you can do ---------- */
 function addTasks(text) {
   const items = text.split(";").map(x => x.trim()).filter(Boolean).map(x => x.slice(0, 200));
@@ -495,7 +525,7 @@ function render() {
   if (!me) {
     app.innerHTML = `<div class="note"><h2>welcome in ♡</h2><p>log in with your twitch account to see and update your task ticket, even when the stream is offline.</p>
       <button class="big twitch" id="login">log in with twitch</button></div>`;
-    $("login").onclick = () => sb.auth.signInWithOAuth({ provider: "twitch", options: { redirectTo: location.origin + location.pathname } });
+    $("login").onclick = () => twitchLogin();
     return;
   }
   if (!mine) {
@@ -625,6 +655,7 @@ async function bootInner() {
   mine = me ? await loadMine() : null;
   if (mine) { await addDueRepeats(); hereNow(); }
   render(); renderOthers().catch(console.error); renderGuestbook().catch(console.error);
+  window.dispatchEvent(new Event("cafe-login"));
 }
 
 $("twbar").href = TWITCH_URL;
@@ -714,6 +745,94 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
   fill(); draw(); setInterval(draw, 500);
 })();
 
+/* ---------- cafe chat: your twitch chat in your cafe's chalkboard style (reading needs no login; sending uses your twitch login) ---------- */
+(() => {
+  const box = $("chatbox"), btn = $("chatBtn"), list = $("chatList"), form = $("chatForm"), input = $("chatInput"), note = $("chatNote");
+  const BOT = "missbobacafe", HOST = TWITCH_CHANNEL, HIDE_COMMANDS = true, MAX = 80;
+  const PASTELS = ["#F7B6C8", "#BAD5FF", "#BDE8C9", "#FFE3A1", "#D6C2F2", "#FFC9A8", "#A8E6E0", "#F9D0E8"];
+  function nameColor(hex, key) {   // keep their twitch color, but make it readable on the chalkboard
+    if (!/^#[0-9a-f]{6}$/i.test(hex || "")) { let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0; hex = PASTELS[h % PASTELS.length]; }
+    let [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)); const lum = (.299 * r + .587 * g + .114 * b) / 255;
+    if (lum < .62) { const k = (.62 - lum) / (1 - lum) + .12; r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k; }
+    return `rgb(${r | 0},${g | 0},${b | 0})`;
+  }
+  function withEmotes(text, emotes) {
+    const chars = Array.from(text), marks = [];
+    (emotes || "").split("/").filter(Boolean).forEach(p => { const [id, rs] = p.split(":"); (rs || "").split(",").forEach(r => { const [x, y] = r.split("-").map(Number); if (!isNaN(x)) marks.push({ x, y, id }); }); });
+    marks.sort((p, q) => p.x - q.x); let html = "", i = 0;
+    const plain = t => esc(t).replace(/(^|\s)(@\w+)/g, '$1<span class="ping">$2</span>');
+    for (const m of marks) { if (m.x < i) continue; html += plain(chars.slice(i, m.x).join("")); html += `<img class="emote" alt="${esc(chars.slice(m.x, m.y + 1).join(""))}" src="https://static-cdn.jtvnw.net/emoticons/v2/${m.id}/default/dark/2.0">`; i = m.y + 1; }
+    return html + plain(chars.slice(i).join(""));
+  }
+  function addMsg({ id, login, name, color, text, emotes, uid }) {
+    if (!text || (HIDE_COMMANDS && /^\s*!/.test(text))) return;
+    const near = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
+    const el = document.createElement("div");
+    el.className = "cm" + (login === HOST ? " host" : login === BOT ? " bot" : "");
+    el.dataset.id = id || ""; el.dataset.user = uid || login;
+    el.innerHTML = `<span class="cn" style="color:${login === HOST ? "#F7B6C8" : login === BOT ? "#D6C2F2" : nameColor(color, login)}">${esc(name)}</span><div class="cb">${withEmotes(text, emotes)}</div>`;
+    list.appendChild(el); while (list.children.length > MAX) list.firstElementChild.remove();
+    if (near) list.scrollTop = list.scrollHeight;
+  }
+  const parseTags = raw => { const t = {}; raw.split(";").forEach(kv => { const i = kv.indexOf("="); t[kv.slice(0, i)] = kv.slice(i + 1).replace(/\\s/g, " ").replace(/\\:/g, ";").replace(/\\\\/g, "\\"); }); return t; };
+  let reader = null, sender = null, sendReady = false, myLogin = "";
+  function onLine(line) {
+    if (line.startsWith("PING")) { reader.send("PONG :tmi.twitch.tv"); return; }
+    let tags = {}, rest = line; if (rest.startsWith("@")) { const sp = rest.indexOf(" "); tags = parseTags(rest.slice(1, sp)); rest = rest.slice(sp + 1); }
+    const m = rest.match(/^:(\S+) (\S+)(?: (\S+))?(?: :([\s\S]*))?$/); if (!m) return;
+    const [, prefix, cmd, , trailing = ""] = m, login = prefix.split("!")[0];
+    if (cmd === "PRIVMSG") { let text = trailing; const am = text.match(/^\u0001ACTION (.*)\u0001$/); if (am) text = am[1];
+      addMsg({ id: tags.id, login, name: tags["display-name"] || login, color: tags.color, text, emotes: tags.emotes, uid: tags["user-id"] }); }
+    else if (cmd === "CLEARMSG") { const el = list.querySelector(`.cm[data-id="${CSS.escape(tags["target-msg-id"] || "")}"]`); if (el) el.remove(); }
+    else if (cmd === "CLEARCHAT") { if (tags["target-user-id"]) list.querySelectorAll(`.cm[data-user="${CSS.escape(tags["target-user-id"])}"]`).forEach(e => e.remove()); else list.innerHTML = ""; }
+  }
+  function connectReader() {   // read-only, no login needed
+    if (DEMO) return demoChat();
+    reader = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
+    reader.onopen = () => { reader.send("CAP REQ :twitch.tv/tags twitch.tv/commands"); reader.send("PASS SCHMOOPIIE"); reader.send("NICK justinfan" + Math.floor(10000 + Math.random() * 80000)); reader.send("JOIN #" + HOST); };
+    reader.onmessage = e => e.data.split("\r\n").filter(Boolean).forEach(onLine);
+    reader.onclose = () => setTimeout(connectReader, 4000);
+  }
+  async function connectSender() {   // sending uses your twitch login (twitch asks to allow chatting when you log in)
+    if (DEMO) { sendReady = !!me; myLogin = me ? (me.name || "kyayu_") : ""; return showForm(); }
+    if (!sb) return showForm();
+    const { data } = await sb.auth.getSession(); const s = data && data.session, tok = s && s.provider_token;
+    myLogin = s ? String(s.user.user_metadata.nickname || s.user.user_metadata.name || "").toLowerCase() : "";
+    if (!s || !tok || !myLogin) { sendReady = false; return showForm(); }
+    if (sender) try { sender.onclose = null; sender.close(); } catch (e) {}
+    sender = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
+    sender.onopen = () => { sender.send("PASS oauth:" + tok); sender.send("NICK " + myLogin); sender.send("JOIN #" + HOST); };
+    sender.onmessage = e => e.data.split("\r\n").filter(Boolean).forEach(l => {
+      if (l.startsWith("PING")) sender.send("PONG :tmi.twitch.tv");
+      else if (/ 001 /.test(l)) { sendReady = true; showForm(); }
+      else if (/Login authentication failed|Improperly formatted auth/.test(l)) { sendReady = false; showForm(true); }
+    });
+    sender.onclose = () => { if (sendReady) { sendReady = false; showForm(); setTimeout(connectSender, 4000); } };
+  }
+  function showForm(expired) {
+    form.hidden = !sendReady;
+    note.innerHTML = sendReady ? "" : !me ? `<button class="soft" id="chatLogin">log in with twitch to chat</button>` :
+      `<button class="soft" id="chatLogin">${expired ? "log in again to keep chatting" : "allow chatting from the website"}</button>`;
+    const l = $("chatLogin"); if (l) l.onclick = () => DEMO ? sb.auth.signInWithOAuth({}) : twitchLogin();
+  }
+  form.onsubmit = e => {
+    e.preventDefault(); const t = input.value.trim().slice(0, 450); if (!t || !sendReady) return;
+    if (DEMO) addMsg({ id: "d" + Date.now(), login: myLogin, name: myLogin, color: "#FF69B4", text: t });
+    else sender.send(`PRIVMSG #${HOST} :${t}`);   // shows up in the list when twitch sends it back
+    input.value = "";
+  };
+  function demoChat() {
+    const lines = [["kyayu_", "#FF69B4", "good morning cafe ♡"], ["pearlpanda", "#1E90FF", "hii! working on my essay today"], ["mochimallow", "#9ACD32", "same, let's go 💪"], [BOT, "#8A2BE2", "@mochimallow focusing on task 2."], [HOST, "#C85A78", "so proud of you all ♡ see you on stream tonight!"]];
+    lines.forEach((l, i) => setTimeout(() => addMsg({ id: "x" + i, login: l[0], name: l[0], color: l[1], text: l[2] }), i * 250));
+  }
+  let started = false;
+  btn.onclick = () => {
+    const open = box.classList.toggle("collapsed") === false; btn.setAttribute("aria-expanded", open);
+    if (open && !started) { started = true; connectReader(); connectSender(); }
+    if (open) { list.scrollTop = list.scrollHeight; showForm(); }
+  };
+  window.addEventListener("cafe-login", () => { if (started) connectSender(); });
+})();
 /* ---------- cafe radio ---------- */
 let radioVol = 100, duckT = null, ducked = false, shuffled = false;
 window.addEventListener("message", e => {   // the player tells us its volume (so we can put it back exactly) and how long the playlist is
