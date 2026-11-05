@@ -137,12 +137,16 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .gbpages{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px;font:600 15px Fredoka,sans-serif;color:var(--soft)}
 .gbpages .soft{background:#FDE3EB;color:var(--pink)}.gbpages .soft:hover{background:#FBD3DF}.gbpages .soft[disabled]{opacity:.4;cursor:default}
 .gbe{display:flex;gap:8px;align-items:flex-start}.gbe b{font:600 17px Fredoka,sans-serif}.gbe small{display:block;color:var(--soft);font-size:14px;margin-top:2px;overflow-wrap:anywhere}
-/* cafe chat: your twitch chat, right on the website (bottom-right) */
+/* cafe chat: a chalkboard bar in the corner; the little dot turns red when someone talks while it's closed */
 .chatbox{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:8;width:min(360px,calc(100vw - 32px));background:#2E3B33;border:6px solid #5A3826;border-radius:18px;box-shadow:0 6px 0 rgba(0,0,0,.3),0 12px 18px rgba(0,0,0,.3)}
-.chatbox .chead{width:100%;display:flex;align-items:center;gap:8px;border:0;background:none;color:#FBEFDD;font:700 22px/1 Gaegu,cursive;padding:9px 12px;cursor:pointer}
-.chatbox .ctag{font:500 12px Fredoka,sans-serif;color:#C9B8A2}.chatbox .carrow{margin-left:auto;font-size:12px;color:#F7B6C8;transition:transform .3s}
+.chatbox .chead{width:100%;display:flex;align-items:center;gap:9px;border:0;background:none;color:#FBEFDD;font:700 22px/1 Gaegu,cursive;padding:9px 12px;cursor:pointer}
+.chatbox .cdot{width:12px;height:12px;border-radius:50%;flex:none;background:#8E9A90;box-shadow:0 0 0 3px rgba(251,239,221,.12);transition:background .3s}
+.chatbox .cdot.on{background:#E8384F;box-shadow:0 0 0 3px #FBD0D6;animation:chatdot 1.4s ease-in-out infinite}
+@keyframes chatdot{50%{box-shadow:0 0 0 6px #FBD0D6}}
+.chatbox .ctag{font:500 12px Fredoka,sans-serif;color:#C9B8A2}
+.chatbox .carrow{margin-left:auto;font-size:12px;color:#F7B6C8;transition:transform .3s}
 .chatbox:not(.collapsed) .carrow{transform:rotate(180deg)}
-.chatbox .cframe{height:min(480px,60vh);border-radius:0 0 12px 12px;overflow:hidden;transition:height .3s}
+.chatbox .cframe{height:min(460px,58vh);border-radius:0 0 12px 12px;overflow:hidden;transition:height .3s}
 .chatbox.collapsed .cframe{height:0}
 .chatbox .cframe{display:flex;flex-direction:column}
 .chatbox .clist{flex:1;overflow-y:auto;padding:4px 14px 6px;scrollbar-width:thin;scrollbar-color:#5A6B60 transparent}
@@ -155,7 +159,6 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .chatbox .cform{display:flex;gap:8px;padding:8px 10px 10px}.chatbox .cform[hidden]{display:none}
 .chatbox .cform input{flex:1;min-width:0;font:500 15px Fredoka,sans-serif;padding:9px 12px;border:0;border-radius:12px;background:#FBEFDD;color:#4A2E1F}
 .chatbox .cform .big{padding:9px 14px;font-size:15px;background:#F7A8C4;color:#4A2E1F;box-shadow:0 3px 0 #C85A78}
-
 @media (max-width:760px){.chatbox{bottom:calc(90px + env(safe-area-inset-bottom,0px))}}
 /* cafe radio: a cute pink retro radio that stays with you while you scroll */
 .radio{position:fixed;left:calc(16px + env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:8;width:min(380px,calc(100vw - 32px));padding-top:30px}
@@ -231,9 +234,9 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/05 b</div>
+<div id="ver">cafe website · version 11/05 d</div>
 <div class="chatbox collapsed" id="chatbox">
-  <button class="chead" id="chatBtn" aria-expanded="false">💬 cafe chat <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
+  <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
     <div class="clist" id="chatList"></div>
     <div class="cnote" id="chatNote"></div>
@@ -747,7 +750,9 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
 
 /* ---------- cafe chat: your twitch chat in your cafe's chalkboard style (reading needs no login; sending uses your twitch login) ---------- */
 (() => {
-  const box = $("chatbox"), btn = $("chatBtn"), list = $("chatList"), form = $("chatForm"), input = $("chatInput"), note = $("chatNote");
+  const box = $("chatbox"), btn = $("chatBtn"), list = $("chatList"), form = $("chatForm"), input = $("chatInput"), note = $("chatNote"), dot = $("chatDot");
+  let unread = 0;
+  const setUnread = n => { unread = n; dot.classList.toggle("on", n > 0); };   // red dot = new messages while it's closed
   const BOT = "missbobacafe", HOST = TWITCH_CHANNEL, HIDE_COMMANDS = true, MAX = 80;
   const PASTELS = ["#F7B6C8", "#BAD5FF", "#BDE8C9", "#FFE3A1", "#D6C2F2", "#FFC9A8", "#A8E6E0", "#F9D0E8"];
   function nameColor(hex, key) {   // keep their twitch color, but make it readable on the chalkboard
@@ -773,6 +778,7 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
     el.innerHTML = `<span class="cn" style="color:${login === HOST ? "#F7B6C8" : login === BOT ? "#D6C2F2" : nameColor(color, login)}">${esc(name)}</span><div class="cb">${withEmotes(text, emotes)}</div>`;
     list.appendChild(el); while (list.children.length > MAX) list.firstElementChild.remove();
     if (near) list.scrollTop = list.scrollHeight;
+    if (box.classList.contains("collapsed") && login !== myLogin && loaded) setUnread(unread + 1);   // closed: the bubble blinks red
   }
   const parseTags = raw => { const t = {}; raw.split(";").forEach(kv => { const i = kv.indexOf("="); t[kv.slice(0, i)] = kv.slice(i + 1).replace(/\\s/g, " ").replace(/\\:/g, ";").replace(/\\\\/g, "\\"); }); return t; };
   let reader = null, sender = null, sendReady = false, myLogin = "";
@@ -824,13 +830,14 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
   function demoChat() {
     const lines = [["kyayu_", "#FF69B4", "good morning cafe ♡"], ["pearlpanda", "#1E90FF", "hii! working on my essay today"], ["mochimallow", "#9ACD32", "same, let's go 💪"], [BOT, "#8A2BE2", "@mochimallow focusing on task 2."], [HOST, "#C85A78", "so proud of you all ♡ see you on stream tonight!"]];
     lines.forEach((l, i) => setTimeout(() => addMsg({ id: "x" + i, login: l[0], name: l[0], color: l[1], text: l[2] }), i * 250));
+    setTimeout(() => addMsg({ id: "late1", login: "taro_tuesday", name: "taro_tuesday", color: "#8A2BE2", text: "anyone want to do a 25/5 sprint? 🍵" }), 6000);
+    setTimeout(() => addMsg({ id: "late2", login: "pearlpanda", name: "pearlpanda", color: "#1E90FF", text: "yes!! starting now" }), 7500);
   }
-  let started = false;
-  btn.onclick = () => {
-    const open = box.classList.toggle("collapsed") === false; btn.setAttribute("aria-expanded", open);
-    if (open && !started) { started = true; connectReader(); connectSender(); }
-    if (open) { list.scrollTop = list.scrollHeight; showForm(); }
-  };
+  let started = false, loaded = false;
+  const start = () => { if (started) return; started = true; connectReader(); connectSender(); setTimeout(() => loaded = true, 2500); };   // older messages that arrive at first don't count as new
+  const toggle = open => { box.classList.toggle("collapsed", !open); btn.setAttribute("aria-expanded", open); if (open) { start(); setUnread(0); list.scrollTop = list.scrollHeight; showForm(); } };
+  btn.onclick = () => toggle(box.classList.contains("collapsed"));
+  setTimeout(start, 1500);   // starts listening when the page loads, so the bubble can tell you when someone talks
   window.addEventListener("cafe-login", () => { if (started) connectSender(); });
 })();
 /* ---------- cafe radio ---------- */
