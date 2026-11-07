@@ -234,7 +234,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/07 a</div>
+<div id="ver">cafe website · version 11/07 b</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -307,7 +307,9 @@ function demoClient() {
 
 /* ---------- loading and saving your ticket ---------- */
 async function loadMine() {
-  const { data } = await sb.from("cafe_lists").select("*").eq("twitch_id", me.id).maybeSingle();
+  // the same Twitch account can have two rows for a while after a name change (old name + new name): use the newest one, preferring your current name
+  const { data: mineRows } = await sb.from("cafe_lists").select("*").eq("twitch_id", me.id).order("updated_at", { ascending: false }).limit(5);
+  const data = (mineRows || []).find(r => r.login === String(me.name || "").toLowerCase()) || (mineRows || [])[0] || null;
   return data;
 }
 async function mutateRow(patchFor, okMsg) {   // read the latest, change it, save it (retries if the cafe changed it at the same moment)
