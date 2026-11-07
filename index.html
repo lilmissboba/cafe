@@ -234,7 +234,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/05 g</div>
+<div id="ver">cafe website · version 11/07 a</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -696,10 +696,14 @@ window.cafeAudio = () => (cafeCtx = cafeCtx || new (window.AudioContext || windo
     st.left = total();
     if (st.running && st.auto) st.endAt = Date.now() + st.left * 1000; else st.running = false;
   }
-  let lastLive = "";
+  let lastLive = null;
   function drawLive(lp) {   // showing miss boba's stream timer
     const total = (lp.phase === "break" ? lp.breakMin : lp.focusMin) * 60, left = Math.max(0, Math.round((lp.paused ? lp.remaining : lp.endsAt - Date.now()) / 1000));
-    const key = lp.phase + lp.round; if (lastLive && key !== lastLive) chime(lp.phase === "focus"); lastLive = key;
+    // chime only when the stream timer actually runs out and flips focus <-> break,
+    // not when it's started, stopped, paused, skipped, reset, or the page re-syncs
+    const real = p => p === "focus" || p === "break";
+    if (lastLive && real(lastLive.phase) && real(lp.phase) && lastLive.phase !== lp.phase && !lastLive.paused && lastLive.left <= 5 && Date.now() - lastLive.at < 15000) chime(lp.phase === "focus");
+    lastLive = { phase: lp.phase, paused: !!lp.paused, left, at: Date.now() };
     el("pomo").classList.toggle("brk", lp.phase === "break"); el("pomo").classList.add("following");
     el("pLabel").innerHTML = `${lp.paused ? "paused" : lp.phase === "focus" ? "focus time" : "break time"}<small>🎥 miss boba's timer</small>`;
     el("pSess").textContent = `session ${lp.round} of ${lp.sessions}`;
