@@ -234,7 +234,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/07 b</div>
+<div id="ver">cafe website · version 11/08 a</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -588,13 +588,16 @@ function render() {
 const miniTicket = r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current;
   const body = r.status === "lurking" && r.in_cafe ? `<li>☕ cozy lurking by the window</li>` : t.length ? t.slice(0, 6).map((x, i) => `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${cur === i ? " ★" : ""}</li>`).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
   return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span>${r.web ? ` <span class="pill web" title="also on the website">💻</span>` : ""}${r.you ? ` <span class="pill pink">you ♡</span>` : ""}</div><ul>${body}</ul></div></div>`; };
-function pinboard(box, rows) {
-  const n = Math.max(1, Math.floor((box.clientWidth + 18) / 238)), cols = Array.from({ length: n }, () => ({ h: 0, html: [] }));
-  rows.forEach(r => {
-    const t = r.tasks || [], shown = t.slice(0, 6), est = 70 + (shown.length ? shown.reduce((a, x) => a + 24 * Math.ceil((x.text.length + 4) / 26), 0) + (t.length > 6 ? 24 : 0) : 30);
-    const c = cols.reduce((a, b) => b.h < a.h ? b : a); c.html.push(miniTicket(r)); c.h += est + 22;
-  });
-  box.innerHTML = cols.map(c => `<div class="pcol">${c.html.join("")}</div>`).join("");
+function pinboard(box, rows) {   // even columns: measure every ticket, then place the tallest first, each into whichever column is shortest
+  const n = Math.max(1, Math.floor((box.clientWidth + 18) / 238));
+  box.innerHTML = Array.from({ length: n }, () => '<div class="pcol"></div>').join("");
+  const cols = [...box.children], tpl = document.createElement("template");
+  const items = rows.map((r, i) => { tpl.innerHTML = miniTicket(r).trim(); const nodes = [...tpl.content.childNodes];
+    cols[0].append(...nodes); const h = nodes.reduce((a, el) => a + (el.offsetHeight || 0), 0) || (70 + Math.min((r.tasks || []).length, 6) * 26);
+    nodes.forEach(el => el.remove()); return { r, i, nodes, h }; });
+  const first = items.filter(x => x.r.you), rest = items.filter(x => !x.r.you).sort((a, b) => b.h - a.h);
+  const H = cols.map(() => 0);
+  [...first, ...rest].forEach(x => { let k = 0; for (let c = 1; c < cols.length; c++) if (H[c] < H[k]) k = c; cols[k].append(...x.nodes); H[k] += x.h + 22; });
 }
 let webHere = new Set();   // people with the website open right now
 async function renderWebNow(live) {
