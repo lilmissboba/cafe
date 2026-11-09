@@ -187,6 +187,7 @@ main{padding-bottom:110px}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .demo{background:#FFE3A1;color:#5A3826;border-radius:12px;padding:8px 12px;margin-top:14px;font-size:14px;text-align:center}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.passport .slot.on.fest{box-shadow:0 0 0 2.5px #F2C96B inset;background:#FFF7E3}
 </style>
 </head>
 <body>
@@ -234,7 +235,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/08 b</div>
+<div id="ver">cafe website · version 11/10 a</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -443,6 +444,51 @@ function bookshelfHTML() {
 /* ---------- daily check-in (boba passport) and the guestbook ---------- */
 function cafeDay(d = new Date()) { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: CAFE_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).forEach(x => p[x.type] = x.value); return `${p.year}-${p.month}-${p.day}`; }
 let lastCheckin = null;
+/* ---------- festive passport stamps: check in ON one of these days and that day's stamp is a festive one ---------- */
+function festiveDay(day) {   // day = "YYYY-MM-DD" (Singapore date)
+  const [Y, M, D] = day.split("-").map(Number), md = M * 100 + D;
+  if (md === 101) return "newyear";
+  if (md === 214) return "valentines";
+  if (md === 704) return "july4";
+  if (md === 809) return "nationalday";
+  if (md === 1030) return "birthday";
+  if (md === 1031) return "halloween";
+  if (md === 1225) return "christmas";
+  if (M === 11) { const first = new Date(Date.UTC(Y, 10, 1)).getUTCDay(), th1 = 1 + ((4 - first + 7) % 7); if (D === th1 + 21) return "thanksgiving"; }   // 4th thursday
+  { const a = Y % 19, b = Math.floor(Y / 100), c = Y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),   // easter sunday
+      h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+      em = Math.floor((h + l - 7 * m + 114) / 31), ed = ((h + l - 7 * m + 114) % 31) + 1; if (M === em && D === ed) return "easter"; }
+  // lunar new year's day: the official dates (always between 1/21 and 2/20), worked out by calendar after 2044
+  const LNY = { 2026: 217, 2027: 206, 2028: 126, 2029: 213, 2030: 203, 2031: 123, 2032: 211, 2033: 131, 2034: 219, 2035: 208, 2036: 128, 2037: 215, 2038: 204, 2039: 124, 2040: 212, 2041: 201, 2042: 222, 2043: 209, 2044: 130 };
+  if (LNY[Y] != null) { if (LNY[Y] === md) return "lunar"; }
+  else if (md >= 121 && md <= 220) { try { const p = new Intl.DateTimeFormat("en-u-ca-chinese", { month: "numeric", day: "numeric", timeZone: "Asia/Shanghai" }).formatToParts(new Date(Date.UTC(Y, M - 1, D, 4)));
+      if ((p.find(x => x.type === "month") || {}).value === "1" && (p.find(x => x.type === "day") || {}).value === "1") return "lunar"; } catch (e) {} }
+  return null;
+}
+const FESTIVE_NAMES = { lunar: "lunar new year", valentines: "valentine's day", easter: "easter", july4: "4th of july", nationalday: "national day", halloween: "halloween", thanksgiving: "thanksgiving", christmas: "christmas", birthday: "miss boba's birthday", newyear: "new year's day" };
+function festiveStamp(key, w, h, rot) {
+  const cup = (tea, deep, extra, lid, straw) => `<svg viewBox="0 0 50 56" width="${w}" height="${h}" style="transform:rotate(${rot || 0}deg)">
+<path d="M31 4l-4 14" stroke="${straw || deep}" stroke-width="3.4" stroke-linecap="round"/>
+<path d="M10 17q15-9 30 0v3H10z" fill="${lid || "#FFFFFF"}" stroke="${deep}" stroke-width="1.6"/>
+<path d="M11 20h28l-3.4 30q-.4 3-3.4 3H17.8q-3 0-3.4-3z" fill="${tea}" stroke="${deep}" stroke-width="1.6" stroke-linejoin="round"/>
+<g fill="#5A3826">${[[18, 46], [24, 48], [30, 46], [21, 42], [28, 42]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.3"/>`).join("")}</g>
+<circle cx="20" cy="30" r="1.6" fill="#5A3826"/><circle cx="30" cy="30" r="1.6" fill="#5A3826"/>
+<path d="M23 33q2 2 4 0" stroke="#5A3826" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+<circle cx="17" cy="33" r="1.8" fill="#F28DAA" opacity=".55"/><circle cx="33" cy="33" r="1.8" fill="#F28DAA" opacity=".55"/>${extra || ""}</svg>`;
+  switch (key) {
+    case "lunar": return cup("#E8504A", "#9C2B25", '<g transform="translate(40 6)"><path d="M0 0v3" stroke="#C9973A" stroke-width="1.2"/><ellipse cx="0" cy="8" rx="4.5" ry="5" fill="#E8504A" stroke="#C9973A" stroke-width="1"/><path d="M-3 13h6" stroke="#C9973A" stroke-width="1.2"/><path d="M0 13v4" stroke="#C9973A" stroke-width="1"/></g><text x="25" y="41" font-size="7" text-anchor="middle" fill="#F7D774" font-weight="700">福</text>', "#F7D774", "#C9973A");
+    case "valentines": return cup("#F7A8C4", "#C85A78", '<path d="M42 10c-1.6-2.4-5-1.4-5 1.2 0 2.4 5 5 5 5s5-2.6 5-5c0-2.6-3.4-3.6-5-1.2z" fill="#E8504A"/><path d="M8 6c-1-1.5-3-.9-3 .7 0 1.5 3 3 3 3s3-1.5 3-3c0-1.6-2-2.2-3-.7z" fill="#F28DAA"/>');
+    case "easter": return cup("#C9E7B5", "#6D9A57", '<ellipse cx="18" cy="9" rx="3.2" ry="8" fill="#FFFFFF" stroke="#C99AB6" stroke-width="1.3" transform="rotate(-12 18 9)"/><ellipse cx="18" cy="9" rx="1.4" ry="5.5" fill="#F7C6D8" transform="rotate(-12 18 9)"/><ellipse cx="32" cy="9" rx="3.2" ry="8" fill="#FFFFFF" stroke="#C99AB6" stroke-width="1.3" transform="rotate(12 32 9)"/><ellipse cx="32" cy="9" rx="1.4" ry="5.5" fill="#F7C6D8" transform="rotate(12 32 9)"/>', "#FFE6F0");
+    case "july4": return cup("#7FA7E0", "#2F4E8A", '<path d="M42 6l1.5 3.2 3.5.4-2.6 2.4.7 3.4-3.1-1.7-3.1 1.7.7-3.4-2.6-2.4 3.5-.4z" fill="#E8504A"/><path d="M29.5 9l-1 3.5" stroke="#FFFFFF" stroke-width="3.6" stroke-linecap="round"/>', null, "#E8504A");
+    case "nationalday": return cup("#FFFFFF", "#C8202A", '<path d="M11 20h28l-1.6 14H12.6z" fill="#E8504A"/><path d="M19 23a3.4 3.4 0 1 0 0 6.4a2.8 2.8 0 1 1 0-6.4z" fill="#FFFFFF"/><g fill="#FFFFFF"><circle cx="24" cy="24.5" r=".9"/><circle cx="27" cy="25.5" r=".9"/><circle cx="26" cy="28.5" r=".9"/><circle cx="23" cy="28.5" r=".9"/><circle cx="22.4" cy="26" r=".9"/></g>');
+    case "halloween": return cup("#A98BD6", "#5B3C8C", '<path d="M13 15l12-14 12 14z" fill="#3A2A4F"/><ellipse cx="25" cy="15.5" rx="16" ry="2.6" fill="#3A2A4F"/><rect x="18" y="11" width="14" height="2.6" fill="#F08A2E"/>', "#3A2A4F", "#F08A2E");
+    case "thanksgiving": return cup("#E8A060", "#9C5B2A", '<path d="M41 4l1.5 3 2.6-1-.6 3 3 .4-2.3 2 1.4 2.4-3-.7-.6 3-1.9-2.4-1.9 2.4-.6-3-3 .7 1.4-2.4-2.3-2 3-.4-.6-3 2.6 1z" fill="#D9703A"/><path d="M41 16v4" stroke="#7A4E38" stroke-width="1"/>', "#FFF1DC", "#7A4E38");
+    case "christmas": return cup("#8FC46A", "#4F7A35", '<path d="M12 16q10-15 24-2" fill="#E8504A"/><path d="M36 14q5 2 7-4" stroke="#E8504A" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="44" cy="9" r="2.6" fill="#FFFFFF" stroke="#E0D3C7"/><rect x="10" y="15" width="28" height="4" rx="2" fill="#FFFFFF" stroke="#E0D3C7"/>', "#FFFFFF", "#FFFFFF");
+    case "birthday": return cup("#F7C6D8", "#C85A78", '<path d="M18 16l7-14 7 14z" fill="#7FB7E0"/><circle cx="25" cy="2.5" r="2" fill="#F5B942"/><g stroke-width="1.6" stroke-linecap="round"><path d="M15 25l2 1" stroke="#7FB7E0"/><path d="M33 26l2-1" stroke="#F5B942"/><path d="M19 37l1 2" stroke="#8FC46A"/><path d="M31 37l-1 2" stroke="#B79AD9"/></g>');
+    case "newyear": return cup("#F7E2A8", "#B8862F", '<g stroke="#F5B942" stroke-width="1.4" stroke-linecap="round"><path d="M42 3v3M42 12v3M36 9h3M45 9h3M38 5l2 2M44 11l2 2M46 5l-2 2M38 13l2-2"/></g><g stroke="#F28DAA" stroke-width="1.2" stroke-linecap="round"><path d="M7 4v2M7 10v2M3 8h2M9 8h2"/></g><g fill="#FFFFFF"><circle cx="19" cy="26" r="1"/><circle cx="29" cy="37" r="1"/><circle cx="31" cy="24" r=".8"/></g>', "#FFF6DC", "#F5B942");
+  }
+  return "";
+}
 function checkIn() {
   mutateRow(row => {
     const today = cafeDay(), ci = row.checkin || { total: 0, stamps: 0, cards: 0, streak: 0, last: "" };
@@ -450,6 +496,8 @@ function checkIn() {
     const y = new Date(today + "T00:00:00Z"); y.setUTCDate(y.getUTCDate() - 1);
     ci.streak = ci.last === y.toISOString().slice(0, 10) ? (ci.streak || 0) + 1 : 1;
     ci.last = today; ci.total = (ci.total || 0) + 1; ci.stamps = (ci.stamps || 0) + 1; ci.display = row.display || row.login;
+    if (ci.stamps === 1) ci.fest = {};   // a fresh passport
+    { const fk = festiveDay(today); if (fk) { ci.fest = ci.fest || {}; ci.fest[ci.stamps - 1] = fk; } }   // checked in on a festive day: a festive stamp
     ci.justFilled = false;
     if (ci.stamps >= CARD_SIZE) { ci.cards = (ci.cards || 0) + 1; ci.stamps = 0; ci.justFilled = true; }
     ci.web = true; lastCheckin = ci;
@@ -463,7 +511,7 @@ const cup = i => { const c = [["#E8C9A6", "#C99A6B"], ["#D9C2F0", "#A98BD8"], ["
   return `<svg viewBox="0 0 50 54" width="40" height="44"><path d="M31 2l-4 14" stroke="${c[1]}" stroke-width="3.4" stroke-linecap="round"/><path d="M10 15q15-9 30 0v3H10z" fill="#fff" stroke="${c[1]}" stroke-width="1.6"/><path d="M11 18h28l-3.4 30q-.4 3-3.4 3H17.8q-3 0-3.4-3z" fill="${c[0]}" stroke="${c[1]}" stroke-width="1.6"/><g fill="#5A3826"><circle cx="18" cy="44" r="2.3"/><circle cx="24" cy="46" r="2.3"/><circle cx="30" cy="44" r="2.3"/><circle cx="21" cy="40" r="2.3"/><circle cx="28" cy="40" r="2.3"/></g><circle cx="20" cy="28" r="1.6" fill="#5A3826"/><circle cx="30" cy="28" r="1.6" fill="#5A3826"/><path d="M23 31q2 2 4 0" stroke="#5A3826" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>`; };
 function passportHTML() {
   const ci = mine.checkin || { stamps: 0, cards: 0, total: 0, streak: 0, last: "" }, done = ci.last === cafeDay();
-  const slots = Array.from({ length: CARD_SIZE }, (_, i) => `<div class="slot ${i < ci.stamps ? "on" : ""}">${i < ci.stamps ? cup(i) : ""}</div>`).join("");
+  const slots = Array.from({ length: CARD_SIZE }, (_, i) => `<div class="slot ${i < ci.stamps ? "on" : ""}${i < ci.stamps && ci.fest && ci.fest[i] ? " fest" : ""}">${i < ci.stamps ? (ci.fest && ci.fest[i] ? festiveStamp(ci.fest[i], 40, 45) : cup(i)) : ""}</div>`).join("");
   const left = CARD_SIZE - (ci.stamps || 0);
   return `<div class="card passport"><div class="pin">
       <div class="ph"><span class="av">${esc((mine.display || mine.login).charAt(0).toUpperCase())}</span><span class="pnm">${esc(mine.display || mine.login)}</span><span class="lb">boba passport</span></div>
