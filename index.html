@@ -234,7 +234,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/08 a</div>
+<div id="ver">cafe website · version 11/08 b</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -525,7 +525,17 @@ function delTask(i) { mutate((t, st) => { if (!t[i]) return false; t.splice(i, 1
 function editTask(i, text) { text = text.trim().slice(0, 200); if (!text) { editing = -1; render(); return; } mutate(t => { if (!t[i]) return false; t[i].text = text; }, "saved"); }
 
 /* ---------- drawing the page ---------- */
-function render() {
+function render() {   // keeps whatever you're typing (task or book boxes) when the page redraws, e.g. after you switch tabs and come back
+  const keep = {}; let focusId = null, selS = 0, selE = 0;
+  for (const id of ["newTask", "bookTitle", "doneTitle"]) { const e = document.getElementById(id); if (e) keep[id] = e.value; }
+  { const a = document.activeElement; if (a && keep.hasOwnProperty(a.id)) { focusId = a.id; selS = a.selectionStart; selE = a.selectionEnd; } }
+  try { return renderInner(); } finally {
+    for (const id of Object.keys(keep)) { const e = document.getElementById(id); if (e && !e.value && keep[id]) e.value = keep[id]; }
+    if (focusId) { const e = document.getElementById(focusId); if (e) { e.focus(); try { e.setSelectionRange(selS, selE); } catch (er) {} } }
+    try { for (const id of Object.keys(keep)) sessionStorage.setItem("draft_" + id, keep[id] || ""); } catch (er) {}
+  }
+}
+function renderInner() {
   const app = $("app");
   if (!me) {
     app.innerHTML = `<div class="note"><h2>welcome in ♡</h2><p>log in with your twitch account to see and update your task ticket, even when the stream is offline.</p>
@@ -569,8 +579,8 @@ function render() {
   app.querySelectorAll("[data-fin]").forEach(b => b.onclick = () => finishBook(+b.dataset.fin));
   app.querySelectorAll("[data-rmr]").forEach(b => b.onclick = () => removeBook("reading", +b.dataset.rmr));
   app.querySelectorAll("[data-rmf]").forEach(b => b.onclick = () => removeBook("finished", +b.dataset.rmf));
-  const bf = $("bookForm"); if (bf) bf.onsubmit = e => { e.preventDefault(); addBook($("bookTitle").value); };
-  const df = $("doneForm"); if (df) df.onsubmit = e => { e.preventDefault(); addFinished($("doneTitle").value); };
+  const bf = $("bookForm"); if (bf) bf.onsubmit = e => { e.preventDefault(); const t = $("bookTitle").value; $("bookTitle").value = ""; addBook(t); };
+  const df = $("doneForm"); if (df) df.onsubmit = e => { e.preventDefault(); const t = $("doneTitle").value; $("doneTitle").value = ""; addFinished(t); };
   const fp = $("finPrev"), fn = $("finNext");
   if (fp) fp.onclick = () => { finPage = Math.max(0, finPage - 1); render(); };
   if (fn) fn.onclick = () => { finPage++; render(); };
@@ -913,6 +923,12 @@ window.duckRadio = secs => {
   setInterval(hereNow, 45000); document.addEventListener("visibilitychange", hereNow); window.addEventListener("focus", hereNow);   // repeating tasks pop on at their time while the page is open
   setInterval(async () => { if (me && editing < 0 && document.activeElement !== $("newTask") && !(document.activeElement && document.activeElement.closest && document.activeElement.closest("#repForm"))) { mine = await loadMine(); render(); } renderOthers(); }, 10000);   // picks up changes made in the cafe
 })();
+</script>
+<script>
+// drafts in the add boxes survive a refresh of the same tab, and are cleared once added
+document.addEventListener("input", e => { const id = e.target && e.target.id; if (["newTask", "bookTitle", "doneTitle"].includes(id)) try { sessionStorage.setItem("draft_" + id, e.target.value); } catch (er) {} });
+document.addEventListener("submit", e => { const i = e.target && e.target.querySelector("input"); if (i) setTimeout(() => { try { sessionStorage.setItem("draft_" + i.id, i.value || ""); } catch (er) {} }, 50); }, true);
+new MutationObserver(() => { for (const id of ["newTask", "bookTitle", "doneTitle"]) { const e = document.getElementById(id); if (e && !e.value && !e.__restored) { e.__restored = true; try { const d = sessionStorage.getItem("draft_" + id); if (d) e.value = d; } catch (er) {} } } }).observe(document.body, { childList: true, subtree: true });
 </script>
 </body>
 </html>
