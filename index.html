@@ -239,7 +239,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/11 a</div>
+<div id="ver">cafe website · version 11/11 b</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -331,18 +331,21 @@ async function mutateRow(patchFor, okMsg) {   // read the latest, change it, sav
 function mutate(change, okMsg) {
   return mutateRow(row => { const tasks = row.tasks || [], st = { current: row.current == null ? -1 : row.current }; if (change(tasks, st) === false) return null; return { tasks, current: st.current }; }, okMsg);
 }
-/* ---------- repeating tasks (like !repeat and !monthly on stream) ---------- */
+/* ---------- repeating tasks (like !repeat, !weekly and !monthly on stream) ---------- */
 const MY_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || CAFE_TIMEZONE;
 const TZ_NAMES = { "Asia/Singapore": "SGT", "Asia/Kuala_Lumpur": "MYT", "Asia/Manila": "PHT", "Asia/Taipei": "TST", "Asia/Hong_Kong": "HKT", "Asia/Tokyo": "JST", "Asia/Seoul": "KST", "Asia/Jakarta": "WIB", "Asia/Bangkok": "ICT", "Australia/Sydney": "AEST", "Europe/London": "UK time" };
 const tzShort = tz => { if (TZ_NAMES[tz]) return TZ_NAMES[tz]; try { return new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" }).formatToParts(new Date()).find(p => p.type === "timeZoneName").value; } catch (e) { return ""; } };
 function zonedNow(tz) { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).forEach(x => p[x.type] = x.value); return { day: `${p.year}-${p.month}-${p.day}`, mins: +p.hour * 60 + +p.minute }; }
 const toMins = t => { const [h, m] = (t || "00:00").split(":").map(Number); return h * 60 + m; };
 function isMonthDay(r, day) { const [y, m, d] = day.split("-").map(Number), last = new Date(Date.UTC(y, m, 0)).getUTCDate(); return d === (r.monthDay === "last" ? last : Math.min(r.monthDay, last)); }
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const isWeekly = r => r.weekDay != null && r.weekDay !== "";
+const isWeekDay = (r, day) => new Date(day + "T00:00:00Z").getUTCDay() === +r.weekDay;
 const ord = n => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
 const niceTime = t => { let [h, m] = t.split(":").map(Number); const ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return m ? `${h}:${String(m).padStart(2, "0")}${ap}` : `${h}${ap}`; };
 function repeatWhen(r) {
-  const day = r.monthDay ? `monthly on the ${r.monthDay === "last" ? "last day" : ord(+r.monthDay)}` : "every day";
-  if (r.monthDay && r.time === "00:00" && !r.tz) return day;
+  const day = r.monthDay ? `monthly on the ${r.monthDay === "last" ? "last day" : ord(+r.monthDay)}` : isWeekly(r) ? `every ${WEEKDAYS[r.weekDay]}` : "every day";
+  if ((r.monthDay || isWeekly(r)) && r.time === "00:00" && !r.tz) return day;
   return `${day} at ${niceTime(r.time)}${r.tzLabel ? " " + r.tzLabel : r.tz ? "" : " SGT"}`;
 }
 function addDue(row) {   // adds any repeating tasks that are due today (the same rules the cafe uses), returns true if anything changed
@@ -350,6 +353,7 @@ function addDue(row) {   // adds any repeating tasks that are due today (the sam
   for (const r of reps) {
     const now = zonedNow(r.tz || CAFE_TIMEZONE);
     if (r.monthDay && !isMonthDay(r, now.day)) continue;
+    if (isWeekly(r) && !isWeekDay(r, now.day)) continue;
     if (r.last === now.day || now.mins < toMins(r.time)) continue;
     r.last = now.day; changed = true;
     const same = tasks.find(x => x.repeat && x.text === r.text);
@@ -366,8 +370,8 @@ async function addDueRepeats() {
   const peek = JSON.parse(JSON.stringify(mine)); if (!addDue(peek)) return;   // nothing due: don't save anything
   await mutateRow(row => addDue(row) ? { tasks: row.tasks, current: row.current == null ? -1 : row.current, repeats: row.repeats } : null);
 }
-let repForm = { type: "daily", day: "1" };
-function addRepeat(text, time, type, day) {
+let repForm = { type: "daily", day: "1", wday: "1" };
+function addRepeat(text, time, type, day, wday) {
   text = text.trim().slice(0, 80); if (!text) { toast("type what the task is first"); return; }
   const max = mine.login === HOST ? MAX_REPEATS_HOST : MAX_REPEATS;
   mutateRow(row => {
@@ -375,11 +379,12 @@ function addRepeat(text, time, type, day) {
     if (reps.length >= max) { toast(`max ${max} repeating tasks, remove one first`); return null; }
     const r = { time: time || "09:00", text, tz: MY_TZ, tzLabel: tzShort(MY_TZ), last: "" };
     if (type === "monthly") r.monthDay = day === "last" ? "last" : +day;
+    if (type === "weekly") r.weekDay = +wday;
     const now = zonedNow(r.tz);   // like the cafe: if today's time already passed, it starts next time
-    if ((!r.monthDay || isMonthDay(r, now.day)) && now.mins >= toMins(r.time)) r.last = now.day;
+    if ((!r.monthDay || isMonthDay(r, now.day)) && (!isWeekly(r) || isWeekDay(r, now.day)) && now.mins >= toMins(r.time)) r.last = now.day;
     reps.push(r);
     return { repeats: reps };
-  }, type === "monthly" ? "monthly task added ↻" : "daily task added ↻");
+  }, `${type === "monthly" || type === "weekly" ? type : "daily"} task added ↻`);
 }
 function removeRepeat(i) { mutateRow(row => { const reps = row.repeats || []; if (!reps[i]) return null; reps.splice(i, 1); return { repeats: reps }; }, "repeating task removed"); }
 function repeatsHTML() {
@@ -388,7 +393,8 @@ function repeatsHTML() {
     ${reps.length ? `<ul class="rlist">${reps.map((r, i) => `<li><span class="rt">${esc(r.text)}</span><span class="rw">${esc(repeatWhen(r))}</span><button class="btn x" data-r="${i}" aria-label="remove">×</button></li>`).join("")}</ul>` : `<p class="empty">no repeating tasks yet. add one below and it'll pop onto your list by itself ♡</p>`}
     ${reps.length < max ? `<form class="radd" id="repForm">
       <input id="repText" maxlength="80" placeholder="task, like stretch or pay rent" autocomplete="off">
-      <select id="repType"><option value="daily">every day</option><option value="monthly" ${repForm.type === "monthly" ? "selected" : ""}>every month</option></select>
+      <select id="repType"><option value="daily">every day</option><option value="weekly" ${repForm.type === "weekly" ? "selected" : ""}>every week</option><option value="monthly" ${repForm.type === "monthly" ? "selected" : ""}>every month</option></select>
+      <select id="repWday" ${repForm.type === "weekly" ? "" : "hidden"}>${WEEKDAYS.map((d, k) => [d, k]).slice(1).concat([[WEEKDAYS[0], 0]]).map(([d, k]) => `<option value="${k}" ${repForm.wday == k ? "selected" : ""}>on ${d}</option>`).join("")}</select>
       <select id="repDay" ${repForm.type === "monthly" ? "" : "hidden"}>${Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}" ${repForm.day == k + 1 ? "selected" : ""}>on the ${ord(k + 1)}</option>`).join("")}<option value="last" ${repForm.day === "last" ? "selected" : ""}>on the last day</option></select>
       <input id="repTime" type="time" value="09:00" aria-label="time">
       <button class="big">add</button></form>
@@ -626,9 +632,10 @@ function renderInner() {
   app.querySelectorAll("[data-r]").forEach(b => b.onclick = () => removeRepeat(+b.dataset.r));
   const rf = $("repForm");
   if (rf) {
-    $("repType").onchange = () => { repForm.type = $("repType").value; $("repDay").hidden = repForm.type !== "monthly"; };
+    $("repType").onchange = () => { repForm.type = $("repType").value; $("repDay").hidden = repForm.type !== "monthly"; $("repWday").hidden = repForm.type !== "weekly"; };
     $("repDay").onchange = () => { repForm.day = $("repDay").value; };
-    rf.onsubmit = e => { e.preventDefault(); addRepeat($("repText").value, $("repTime").value, $("repType").value, $("repDay").value); };
+    $("repWday").onchange = () => { repForm.wday = $("repWday").value; };
+    rf.onsubmit = e => { e.preventDefault(); addRepeat($("repText").value, $("repTime").value, $("repType").value, $("repDay").value, $("repWday").value); };
   }
   app.insertAdjacentHTML("beforeend", bookshelfHTML());   // book nook first, then the boba passport
   app.insertAdjacentHTML("beforeend", passportHTML());
