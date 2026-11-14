@@ -292,7 +292,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/15 c</div>
+<div id="ver">cafe website · version 11/15 d</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -692,7 +692,7 @@ function waterHTML() {
     <div class="wh"><span class="wt">💧 my water jug</span><span class="lb">goal ${fmtMl(w.goal)}</span></div>
     <div class="wbody">${waterJug(w.ml / w.goal)}<div><div class="wnum">${fmtMl(w.ml)} <small>/ ${fmtMl(w.goal)} today</small></div>
       <div class="wsub">${done ? "daily water goal reached! 🎉" : `${fmtMl(w.goal - w.ml)} to go`}</div></div></div>
-    <div class="wbtns"><button data-w="250ml">+ 1 glass</button><button data-w="500ml">+ 1 bottle</button><button data-w="1L">+ 1L</button>${w.last.length ? `<button class="ghost" id="wUndo">undo</button>` : ""}</div>
+    <div class="wbtns"><button data-w="250ml">+ 250ml</button><button data-w="500ml">+ 500ml</button><button data-w="1L">+ 1L</button>${w.last.length ? `<button class="ghost" id="wUndo">undo</button>` : ""}</div>
     <form id="wForm"><input id="wAmt" placeholder="how much? like 350ml or 2 cups" maxlength="20"><button>add</button></form>
     <form id="wGoalForm"><input id="wGoal" placeholder="daily goal, like 2.5L" maxlength="12"><button>set goal</button></form>
     <p class="hint center">same jug as !water on stream • it empties at midnight (cafe time)</p>
