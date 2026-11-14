@@ -71,6 +71,8 @@ li .tx:hover{background:rgba(0,0,0,.04)}
 li.done .tx{text-decoration:line-through;color:#A8937F}
 li .tag{font:600 12px Fredoka,sans-serif;color:var(--pink);background:#fff;border-radius:999px;padding:2px 8px;flex:none}
 li .tag.daily{color:#3E8E5A;background:#E3F3E6}
+@media (max-width:560px){   /* phones: the task text keeps the whole line; tags and buttons drop to a second line under it */
+  li{flex-wrap:wrap;row-gap:6px}li .tx{flex:1 1 calc(100% - 76px)}li .tx + *{margin-left:66px}}
 li .btn{flex:none;border:0;border-radius:10px;padding:7px 10px;font:600 14px Fredoka,sans-serif;cursor:pointer;background:#F3E6D8;color:var(--ink)}
 li .btn.f{background:var(--blush);color:var(--pink)}
 li.urgent .tx{background:#FFE0DA;color:#B4382C;font-weight:500}
@@ -290,7 +292,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/15 b</div>
+<div id="ver">cafe website · version 11/15 c</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
