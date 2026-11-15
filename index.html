@@ -292,7 +292,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/15 d</div>
+<div id="ver">cafe website · version 11/15 e</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -800,11 +800,12 @@ function renderInner() {
     $("repWday").onchange = () => { repForm.wday = $("repWday").value; };
     rf.onsubmit = e => { e.preventDefault(); addRepeat($("repText").value, $("repTime").value, $("repType").value, $("repDay").value, $("repWday").value); };
   }
-  app.insertAdjacentHTML("beforeend", bookshelfHTML());   // book nook first, then the boba passport
+  // under your ticket: water jug, then the boba passport, then the bookshelf (the guestbook comes after, below the panel)
+  app.insertAdjacentHTML("beforeend", waterHTML());
   app.insertAdjacentHTML("beforeend", passportHTML());
+  app.insertAdjacentHTML("beforeend", bookshelfHTML());
   app.querySelectorAll(".passport .slot svg").forEach(centerStamp);
   { const sh = app.querySelector(".shelf.cz"); if (sh) { const bk = mine.books && Array.isArray(mine.books.finished) ? mine.books.finished : [], mk = monthKey(Date.now()); fillShelfTop(sh, bk.filter(x => x.done && monthKey(x.done) === mk).sort((p, q) => p.done - q.done)); } }
-  app.insertAdjacentHTML("beforeend", waterHTML());
   app.querySelectorAll("[data-w]").forEach(b => b.onclick = () => addWater(b.dataset.w));
   { const u = $("wUndo"); if (u) u.onclick = () => undoWater(); }
   { const f = $("wForm"); if (f) f.onsubmit = e => { e.preventDefault(); const t = $("wAmt").value; $("wAmt").value = ""; addWater(t); }; }
