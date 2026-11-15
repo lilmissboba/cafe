@@ -174,6 +174,7 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .water .win{background-color:var(--cream);border-radius:17px;border:2.5px solid #EAF4FC;padding:16px 18px 14px;background-image:linear-gradient(rgba(170,205,235,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(170,205,235,.18) 1px,transparent 1px);background-size:15px 15px}
 .water .wh{display:flex;align-items:center;gap:10px;padding:0 2px 10px;border-bottom:2px dashed #CFE2F4}
 .water .wt{font:700 28px/1 Gaegu,cursive;color:#3C7DB8;flex:1}
+.water .wunit{display:inline-flex;background:#E2EEFA;border-radius:999px;padding:3px}.water .wunit button{border:0;background:none;border-radius:999px;padding:4px 11px;font:600 13px Fredoka,sans-serif;color:#5F8FBE;cursor:pointer}.water .wunit button.on{background:#5FA3DE;color:#fff}
 .water .lb{font:600 14px Fredoka,sans-serif;color:#2F6DA8;background:#E2EEFA;border-radius:999px;padding:5px 12px;white-space:nowrap}
 .water .wbody{display:flex;align-items:center;gap:18px;padding:14px 4px 6px}
 .water .wbody svg{flex:none;width:96px;height:132px;overflow:visible}
@@ -292,7 +293,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/15 e</div>
+<div id="ver">cafe website · version 11/15 f</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -643,39 +644,44 @@ function passportHTML() {   // looks like the boba passport that pops up on stre
 }
 /* ---------- my water jug (the same jug as !water on stream; it empties at midnight, cafe time) ---------- */
 const WATER_GOAL_ML = 2000, WATER_MAX_ADD_ML = 3000, WATER_MAX_DAY_ML = 6000;
+const fmtOz = ml => { const oz = ml / 29.5735; return `${oz < 10 && Math.round(oz * 10) % 10 ? oz.toFixed(1) : Math.round(oz)}oz`; };
 const fmtMl = ml => ml >= 1000 ? `${(ml / 1000).toFixed(ml % 1000 ? (ml % 100 ? 2 : 1) : 0)}L` : `${Math.round(ml)}ml`;
-function parseWater(a) {   // same as on stream: "500ml", "1L", "2 cups", "16oz", "1 bottle", or just "500" (ml) / "2" (glasses)
+function parseWater(a, unit) {   // same as on stream: "500ml", "1L", "2 cups", "16oz", "1 bottle", or just "500" (ml) / "2" (glasses)
   const t = (a || "").toLowerCase().replace(/^(add|drank|drink|had)\s+/, "").replace(/\ba\b|\ban\b/, "1").trim();
   const m = t.match(/^(\d+(?:\.\d+)?)\s*(ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|oz|ounces?|cups?|glass(?:es)?|bottles?|sips?)?\b/);
   if (!m) return 0;
   const n = parseFloat(m[1]), u = m[2] || "";
   if (/^m/.test(u)) return n; if (/^l/.test(u)) return n * 1000; if (/^o/.test(u)) return n * 29.57;
   if (/^(cup|glass)/.test(u)) return n * 250; if (/^bottle/.test(u)) return n * 500; if (/^sip/.test(u)) return n * 30;
+  if (unit === "oz") return n * 29.5735;   // oz people: a bare number means oz
   return n <= 20 ? n * 250 : n;
 }
-function myWater() { const w = mine && mine.water, today = cafeDay(); const goal = (w && w.goal) || WATER_GOAL_ML; return w && w.day === today ? { ml: +w.ml || 0, last: w.last || [], goal } : { ml: 0, last: [], goal }; }
+function myWater() { const w = mine && mine.water, today = cafeDay(); const goal = (w && w.goal) || WATER_GOAL_ML, unit = w && w.unit === "oz" ? "oz" : "ml"; return w && w.day === today ? { ml: +w.ml || 0, last: w.last || [], goal, unit } : { ml: 0, last: [], goal, unit }; }
+const wFmt = (ml, unit) => unit === "oz" ? fmtOz(ml) : fmtMl(ml);
 function waterPatch(fn, msg) {
   mutateRow(row => {
-    const today = cafeDay(), old = row.water || {}, w = { day: today, ml: old.day === today ? +old.ml || 0 : 0, last: old.day === today && Array.isArray(old.last) ? old.last : [], goal: old.goal || null };
+    const today = cafeDay(), old = row.water || {}, w = { day: today, ml: old.day === today ? +old.ml || 0 : 0, last: old.day === today && Array.isArray(old.last) ? old.last : [], goal: old.goal || null, unit: old.unit === "oz" ? "oz" : "ml" };
     if (fn(w) === false) return null;
     w.at = Date.now(); return { water: w };
   }, msg);
 }
 function addWater(text) {
-  let ml = Math.round(parseWater(text));
+  const unit = myWater().unit;
+  let ml = Math.round(parseWater(text, unit));
   if (!ml) { toast("try 500ml, 1L or 2 cups"); return; }
   waterPatch(w => {
     ml = Math.min(ml, WATER_MAX_ADD_ML, Math.max(0, WATER_MAX_DAY_ML - w.ml));
-    if (!ml) { toast(`you've logged ${fmtMl(w.ml)} today, that's the most for one day!`); return false; }
+    if (!ml) { toast(`you've logged ${wFmt(w.ml, unit)} today, that's the most for one day!`); return false; }
     const goal = w.goal || WATER_GOAL_ML, before = w.ml; w.ml += ml; w.last = [...w.last, ml].slice(-5);
-    window.waterMsg = before < goal && w.ml >= goal ? "daily water goal reached! 🎉💧" : `+${fmtMl(ml)} 💧`;
+    window.waterMsg = before < goal && w.ml >= goal ? "daily water goal reached! 🎉💧" : `+${wFmt(ml, unit)} 💧`;
   }, () => window.waterMsg);
 }
-function undoWater() { waterPatch(w => { const back = w.last.pop(); if (!back) { toast("nothing to undo"); return false; } w.ml = Math.max(0, w.ml - back); window.waterMsg = `took ${fmtMl(back)} off`; }, () => window.waterMsg); }
+function undoWater() { const unit = myWater().unit; waterPatch(w => { const back = w.last.pop(); if (!back) { toast("nothing to undo"); return false; } w.ml = Math.max(0, w.ml - back); window.waterMsg = `took ${wFmt(back, unit)} off`; }, () => window.waterMsg); }
+function setWaterUnit(unit) { waterPatch(w => { if (w.unit === unit) return false; w.unit = unit; }, `your water now shows in ${unit}`); }
 function setWaterGoal(text) {
-  const g = Math.round(parseWater(text));
-  if (!g || g < 250 || g > WATER_MAX_DAY_ML) { toast(`pick a goal between 250ml and ${fmtMl(WATER_MAX_DAY_ML)}`); return; }
-  waterPatch(w => { w.goal = g; }, `your daily water goal is now ${fmtMl(g)} 💧`);
+  const unit = myWater().unit, g = Math.round(parseWater(text, unit));
+  if (!g || g < 250 || g > WATER_MAX_DAY_ML) { toast(`pick a goal between ${wFmt(250, unit)} and ${wFmt(WATER_MAX_DAY_ML, unit)}`); return; }
+  waterPatch(w => { w.goal = g; }, `your daily water goal is now ${wFmt(g, unit)} 💧`);
 }
 function waterJug(fr) {
   const y = (50 * (1 - Math.min(1, fr))).toFixed(1);
@@ -687,14 +693,15 @@ function waterJug(fr) {
     <rect x="10" y="17" width="34" height="6" rx="3" fill="#CFE3F5" stroke="#8FB6DA" stroke-width="1.6"/><path d="M33 18l6-16" stroke="#F48FB1" stroke-width="3" stroke-linecap="round"/></svg>`;
 }
 function waterHTML() {
-  const w = myWater(), done = w.ml >= w.goal;
+  const w = myWater(), done = w.ml >= w.goal, u = w.unit, F = ml => wFmt(ml, u);
+  const quick = u === "oz" ? [["8oz", "+ 8oz"], ["16oz", "+ 16oz"], ["32oz", "+ 32oz"]] : [["250ml", "+ 250ml"], ["500ml", "+ 500ml"], ["1L", "+ 1L"]];
   return `<div class="card water${done ? " done" : ""}"><div class="win">
-    <div class="wh"><span class="wt">💧 my water jug</span><span class="lb">goal ${fmtMl(w.goal)}</span></div>
-    <div class="wbody">${waterJug(w.ml / w.goal)}<div><div class="wnum">${fmtMl(w.ml)} <small>/ ${fmtMl(w.goal)} today</small></div>
-      <div class="wsub">${done ? "daily water goal reached! 🎉" : `${fmtMl(w.goal - w.ml)} to go`}</div></div></div>
-    <div class="wbtns"><button data-w="250ml">+ 250ml</button><button data-w="500ml">+ 500ml</button><button data-w="1L">+ 1L</button>${w.last.length ? `<button class="ghost" id="wUndo">undo</button>` : ""}</div>
-    <form id="wForm"><input id="wAmt" placeholder="how much? like 350ml or 2 cups" maxlength="20"><button>add</button></form>
-    <form id="wGoalForm"><input id="wGoal" placeholder="daily goal, like 2.5L" maxlength="12"><button>set goal</button></form>
+    <div class="wh"><span class="wt">💧 my water jug</span><span class="wunit"><button data-u="ml" class="${u === "ml" ? "on" : ""}">ml</button><button data-u="oz" class="${u === "oz" ? "on" : ""}">oz</button></span><span class="lb">goal ${F(w.goal)}</span></div>
+    <div class="wbody">${waterJug(w.ml / w.goal)}<div><div class="wnum">${F(w.ml)} <small>/ ${F(w.goal)} today</small></div>
+      <div class="wsub">${done ? "daily water goal reached! 🎉" : `${F(w.goal - w.ml)} to go`}</div></div></div>
+    <div class="wbtns">${quick.map(([v, t]) => `<button data-w="${v}">${t}</button>`).join("")}${w.last.length ? `<button class="ghost" id="wUndo">undo</button>` : ""}</div>
+    <form id="wForm"><input id="wAmt" placeholder="${u === "oz" ? "how much? like 12oz or 2 cups" : "how much? like 350ml or 2 cups"}" maxlength="20"><button>add</button></form>
+    <form id="wGoalForm"><input id="wGoal" placeholder="${u === "oz" ? "daily goal, like 64oz" : "daily goal, like 2.5L"}" maxlength="12"><button>set goal</button></form>
     <p class="hint center">same jug as !water on stream • it empties at midnight (cafe time)</p>
   </div></div>`;
 }
@@ -807,6 +814,7 @@ function renderInner() {
   app.querySelectorAll(".passport .slot svg").forEach(centerStamp);
   { const sh = app.querySelector(".shelf.cz"); if (sh) { const bk = mine.books && Array.isArray(mine.books.finished) ? mine.books.finished : [], mk = monthKey(Date.now()); fillShelfTop(sh, bk.filter(x => x.done && monthKey(x.done) === mk).sort((p, q) => p.done - q.done)); } }
   app.querySelectorAll("[data-w]").forEach(b => b.onclick = () => addWater(b.dataset.w));
+  app.querySelectorAll(".water [data-u]").forEach(b => b.onclick = () => setWaterUnit(b.dataset.u));
   { const u = $("wUndo"); if (u) u.onclick = () => undoWater(); }
   { const f = $("wForm"); if (f) f.onsubmit = e => { e.preventDefault(); const t = $("wAmt").value; $("wAmt").value = ""; addWater(t); }; }
   { const f = $("wGoalForm"); if (f) f.onsubmit = e => { e.preventDefault(); const t = $("wGoal").value; $("wGoal").value = ""; setWaterGoal(t); }; }
