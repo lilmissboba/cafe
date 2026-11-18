@@ -71,6 +71,8 @@ li .tx:hover{background:rgba(0,0,0,.04)}
 li.done .tx{text-decoration:line-through;color:#A8937F}
 li .tag{font:600 12px Fredoka,sans-serif;color:var(--pink);background:#fff;border-radius:999px;padding:2px 8px;flex:none}
 li .tag.daily{color:#3E8E5A;background:#E3F3E6}
+@media (max-width:560px){   /* phones: the task text keeps the whole line; tags and buttons drop to a second line under it */
+  li{flex-wrap:wrap;row-gap:6px}li .tx{flex:1 1 calc(100% - 76px)}li .tx + *{margin-left:66px}}
 li .btn{flex:none;border:0;border-radius:10px;padding:7px 10px;font:600 14px Fredoka,sans-serif;cursor:pointer;background:#F3E6D8;color:var(--ink)}
 li .btn.f{background:var(--blush);color:var(--pink)}
 li.urgent .tx{background:#FFE0DA;color:#B4382C;font-weight:500}
@@ -110,28 +112,81 @@ h3.sec{font:700 30px/1 Gaegu,cursive;color:var(--chalk);margin:34px 4px 12px}
 .rlist .rt{flex:1;min-width:0;font-size:17px;overflow-wrap:anywhere}.rlist .rw{font:600 13px Fredoka,sans-serif;color:#3E8E5A;background:#E3F3E6;border-radius:999px;padding:3px 10px;flex:none}
 .radd{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.radd input,.radd select{font:500 15px Fredoka,sans-serif;padding:10px 12px;border:2px solid #EADBC8;border-radius:12px;background:#fff;color:var(--ink)}
 .radd #repText{flex:1 1 200px;min-width:0}.radd .big{padding:10px 16px;font-size:16px}
-.shelf{margin-top:24px;background:var(--cream);border-radius:18px;padding:14px 16px;box-shadow:0 5px 0 rgba(0,0,0,.3),inset 0 0 0 2px #EFE3D3}
-.shelf .shd{font:700 26px/1 Gaegu,cursive;color:#5A3826;margin:2px 4px 10px}.shelf .shd span{font:500 13px Fredoka,sans-serif;color:var(--soft);margin-left:8px}
-.nookviz{display:block;width:100%;height:auto;margin:0 0 12px;background:linear-gradient(#F6E7D3,#EFDCC3);border-radius:12px}
 .shcols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .shcols > div{display:flex;flex-direction:column}   /* both "add" boxes line up at the bottom */
 .shcols > div > .radd{margin-top:auto;padding-top:12px}
 .shcols > div > .gbpages{margin-top:10px}@media (max-width:620px){.shcols{grid-template-columns:1fr}}
 .shcols h4{margin:0 0 6px;height:28px;display:flex;align-items:center;gap:6px;font:700 21px/1 Gaegu,cursive;color:var(--pink);white-space:nowrap}
 .shcols h4 .ck{font:600 16px/1 Fredoka,sans-serif}.shcols h4.fin{color:#3E8E5A}
-.bkr{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1.5px dashed #EADBC8}.bkr i{width:9px;height:26px;border-radius:2px;flex:none}
-.bkr .bt{flex:1;min-width:0;font:500 16px/1.2 Fredoka,sans-serif;overflow-wrap:anywhere}.bkr .bt small{display:block;color:var(--soft);font-size:12.5px}
-.bkr .soft{padding:5px 10px;font-size:13px}.bkr .btn.x{background:none;border:0;color:#B49A84;font-size:20px;cursor:pointer;padding:2px 6px}
-.passport{margin-top:26px;background:#F7A8C4;border-radius:22px;padding:9px;box-shadow:0 6px 0 rgba(0,0,0,.3)}
-.passport .pin{background:var(--cream);border-radius:15px;padding:16px 18px 14px;outline:2px dashed #F2C3D2;outline-offset:-7px}
-.passport .ph{display:flex;align-items:center;gap:10px;padding:0 4px 10px;border-bottom:2px dashed #F2D6DF}
-.passport .av{width:34px;height:34px;border-radius:50%;background:#E890AB;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;flex:none}
-.passport .pnm{font:600 22px Fredoka,sans-serif;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.passport .lb{font:600 13px Fredoka,sans-serif;color:var(--pink);background:#FDE3EB;border-radius:999px;padding:4px 10px}
-.passport .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px 0 8px;justify-items:center}
-.passport .slot{width:58px;height:58px;border-radius:50%;border:2.5px dashed #E8CBBE;display:flex;align-items:center;justify-content:center}
-.passport .slot.on{border:none;background:radial-gradient(circle at 50% 45%,#fff,#FCEFF3 70%);box-shadow:0 0 0 2.5px #F2C3D2 inset}
-.passport .pf{text-align:center;color:var(--soft);font-weight:500;margin-bottom:12px}.passport .pf b{color:var(--pink)}
+/* ---------- the cozy card look, same as the cards on stream: polka-dot frame, cream grid, ribbon title, washi tape ---------- */
+.cz{position:relative;border-radius:26px;padding:11px;background-color:var(--fc);
+  background-image:radial-gradient(circle,var(--fd) 2.7px,transparent 3.1px),radial-gradient(circle,var(--fd) 2.7px,transparent 3.1px);background-size:18.5px 16px;background-position:0 0,9.25px 8px;
+  box-shadow:0 3.5px 0 var(--fe),0 8px 0 rgba(0,0,0,.22)}
+.cz .czIn{position:relative;border-radius:18px;border:2.5px solid #FBE0DA;background-color:#FFF8EE;padding:34px 18px 14px;
+  background-image:linear-gradient(rgba(240,184,200,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(240,184,200,.22) 1px,transparent 1px);background-size:17px 17px}
+.cz .czRib{position:absolute;left:50%;top:-24px;transform:translateX(-50%);z-index:3;white-space:nowrap;background:var(--rb);color:#fff;font:600 19px/1 Fredoka,sans-serif;
+  padding:10px 24px 12px;border-radius:7px 7px 4px 4px;box-shadow:inset 0 -5px 0 var(--rbb),inset 0 2px 0 rgba(255,255,255,.18),0 2px 3px rgba(120,40,70,.15);max-width:calc(100% - 120px);overflow:hidden;text-overflow:ellipsis}
+.cz .czTape{position:absolute;top:2px;width:90px;height:28px;z-index:4;opacity:.92;background:repeating-linear-gradient(45deg,#FCE3A0 0 8px,#FFF1C6 8px 16px);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+@media (max-width:520px){.cz .czRib{font-size:16px;padding:9px 16px 11px;max-width:calc(100% - 50px)}.cz .czTape{width:70px;height:24px}.shelf.cz{margin-top:80px}.shelf .bkTop.l{left:30px}.shelf .bkTop.r{right:30px}}
+.cz .czTape.l{left:-24px;transform:rotate(-34deg)}.cz .czTape.r{right:-24px;transform:rotate(34deg)}
+.cz .lb{font:600 13.5px Fredoka,sans-serif;color:#D6537D;background:#FCE3EB;border-radius:999px;padding:5px 11px;white-space:nowrap}
+/* boba passport */
+.passport.cz{--fc:#F7A8C4;--fd:#FFC6DA;--fe:#B06A80;--rb:#EC8DAE;--rbb:#D9739A;margin-top:40px}
+.passport .ph{display:flex;align-items:center;gap:8px;padding:0 2px 8px;flex-wrap:wrap}
+.passport .pnm{font:700 32px/1 Gaegu,cursive;color:#5A3826;-webkit-text-stroke:1px #5A3826;flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.passport .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:6px 0 8px;justify-items:center}
+.passport .slot{position:relative;width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#FAE6EE;box-shadow:inset 0 4px 0 rgba(222,170,190,.22);font:700 25px/1 Gaegu,cursive;color:#EDC3D3}
+.passport .slot.on{background:#FFF9F4;box-shadow:0 0 0 3.5px #F6C3D4 inset}
+.passport .slot.on.fest{background:#FFF9F0;box-shadow:0 0 0 3.5px #F0C46A inset}
+.passport .slot svg{width:50px;height:54px;overflow:visible;flex:none}
+.passport .slot .badge{position:absolute;right:-7px;top:-9px;font-size:18px;line-height:1}
+.passport .pf{text-align:center;font:700 20px/1.3 Gaegu,cursive;letter-spacing:.5px;color:#7A5A45;margin:6px 0 12px}.passport .pf b{color:#E0587F;font-size:23px}
+@media (max-width:520px){.passport .slot{width:50px;height:50px}.passport .slot svg{width:40px;height:44px}.passport .pnm{font-size:26px}}
+/* my bookshelf */
+.shelf.cz{--fc:#F7A8C4;--fd:#FFC6DA;--fe:#B06A80;--rb:#EC8DAE;--rbb:#D9739A;margin-top:96px}
+.shelf .bkTop{position:absolute;bottom:100%;margin-bottom:-4px;display:flex;align-items:flex-end;gap:2px;z-index:2}
+.shelf .bkTop.l{left:70px}.shelf .bkTop.r{right:70px;flex-direction:row-reverse}
+.shelf .bkTop span{display:block;border-radius:3px 3px 2px 2px;transform-origin:50% 100%;box-shadow:inset -3px 0 0 rgba(0,0,0,.08),inset 0 0 0 1.5px rgba(90,56,38,.18);
+  background-image:linear-gradient(180deg,transparent 18%,rgba(255,255,255,.55) 18%,rgba(255,255,255,.55) 23%,transparent 23%,transparent 77%,rgba(255,255,255,.55) 77%,rgba(255,255,255,.55) 82%,transparent 82%)}
+.shelf .bkTop span.ghost{background:rgba(255,246,236,.18)!important;box-shadow:none;border:2px dashed rgba(255,236,242,.75);box-sizing:border-box}
+.shelf .bkTop span.flat{border-radius:2px;background-image:linear-gradient(90deg,transparent 12%,rgba(255,255,255,.55) 12%,rgba(255,255,255,.55) 16%,transparent 16%)}
+.shelf .bkTop .stack{display:flex;flex-direction:column;align-items:center;gap:1px}
+.shelf .shcols{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media (max-width:620px){.shelf .shcols{grid-template-columns:1fr}}
+.shelf .page{display:flex;flex-direction:column;border:3px solid #F5C3D3;border-radius:16px;padding:10px 14px 12px;background:#FFF8EE}
+.shelf .page h4{display:flex;align-items:center;gap:7px;margin:0 0 4px;font:700 25px/1.2 Gaegu,cursive;letter-spacing:.4px;color:#E0678E}
+.shelf .page h4 .n{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 6px;border-radius:999px;background:#FCE3EB;color:#D6537D;font:600 14px Fredoka,sans-serif}
+.shelf .page h4 .mo{margin-left:auto;font:700 16px Gaegu,cursive;color:#C85A78;background:#FCE3EB;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.bkr,.shelf .ln{min-height:50px;border-bottom:2px solid #FBE3E6;box-sizing:border-box}
+.bkr{display:flex;align-items:center;gap:9px;padding:5px 0}
+.bkr i{width:11px;height:30px;border-radius:3px;flex:none;opacity:.75}
+.bkr .bt{flex:1;min-width:0;font:600 17px/1.15 Fredoka,sans-serif;color:#4A2E1F;overflow-wrap:anywhere}
+.bkr .bt small{display:block;font:700 16px/1.2 Gaegu,cursive;letter-spacing:.5px;color:#8C6E55;margin-top:2px}
+.bkr .soft{padding:5px 11px;font-size:13px;background:#FCE3EB;color:#C85A78}.bkr .soft:hover{background:#F9D3E0}
+.bkr .btn.x{background:none;border:0;color:#C9A9B4;font-size:20px;cursor:pointer;padding:2px 6px}
+.shelf .page .radd{margin-top:auto;padding-top:12px}.shelf .page .radd input{border-color:#F5C3D3}.shelf .page .radd .big{background:#EC8DAE;box-shadow:0 3px 0 #D9739A}
+.shelf .page .gbpages{margin-top:10px}
+.shelf .empty{font:700 18px Gaegu,cursive;color:#A8937F;margin:10px 0}
+.shelf .shfoot{text-align:center;font:700 17px/1.6 Gaegu,cursive;letter-spacing:.5px;color:#7A5A45;margin-top:12px}
+.shelf .shfoot b{display:inline-block;background:#E58AAB;color:#fff;border-radius:999px;padding:4px 12px;font:600 14px Fredoka,sans-serif;letter-spacing:0;margin:0 6px}
+/* my water jug (same jug as !water on stream) */
+.water{margin-top:26px;border-radius:24px;padding:10px;background-color:#9CCBEF;background-image:radial-gradient(circle,#C8E3F8 2.6px,transparent 3px),radial-gradient(circle,#C8E3F8 2.6px,transparent 3px);background-size:17px 15px;background-position:0 0,8.5px 7.5px;box-shadow:0 4px 0 #5F8FBE,0 6px 0 rgba(0,0,0,.25)}
+.water.done{background-color:#6FB0E8;box-shadow:0 0 0 4px #fff,0 0 30px 10px rgba(110,185,255,.7)}   /* an even white ring and glow all the way around (no darker bottom edge while it glows) */
+.water .win{background-color:var(--cream);border-radius:17px;border:2.5px solid #EAF4FC;padding:16px 18px 14px;background-image:linear-gradient(rgba(170,205,235,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(170,205,235,.18) 1px,transparent 1px);background-size:15px 15px}
+.water .wh{display:flex;align-items:center;gap:10px;padding:0 2px 10px;border-bottom:2px dashed #CFE2F4}
+.water .wt{font:700 28px/1 Gaegu,cursive;color:#3C7DB8;flex:1}
+.water .wunit{display:inline-flex;background:#E2EEFA;border-radius:999px;padding:3px}.water .wunit button{border:0;background:none;border-radius:999px;padding:4px 11px;font:600 13px Fredoka,sans-serif;color:#5F8FBE;cursor:pointer}.water .wunit button.on{background:#5FA3DE;color:#fff}
+.water .lb{font:600 14px Fredoka,sans-serif;color:#2F6DA8;background:#E2EEFA;border-radius:999px;padding:5px 12px;white-space:nowrap}
+.water .wbody{display:flex;align-items:center;gap:18px;padding:14px 4px 6px}
+.water .wbody svg{flex:none;width:96px;height:132px;overflow:visible}
+.water .wnum{font:600 34px/1.1 Fredoka,sans-serif;color:#2F6DA8}.water .wnum small{font-size:18px;color:var(--soft)}
+.water .wsub{font:700 20px/1.3 Gaegu,cursive;color:#7A5A45;margin-top:2px}.water.done .wsub{color:#2F6DA8}
+.water .wbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.water .wbtns button,.water form button{border:0;border-radius:999px;padding:9px 14px;font:600 15px Fredoka,sans-serif;cursor:pointer;background:#5FA3DE;color:#fff;box-shadow:0 3px 0 #4A8BC6}
+.water .wbtns button.ghost{background:#E2EEFA;color:#2F6DA8;box-shadow:0 3px 0 #BCD6EE}
+.water form{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.water input{flex:1 1 140px;min-width:0;border:2px solid #CFE2F4;border-radius:12px;padding:9px 12px;font:500 16px Fredoka,sans-serif;color:var(--ink);background:#fff}
+.water .lvl{transition:transform 1s cubic-bezier(.3,1,.4,1)}
+.water .wave{animation:wWave 1.6s linear infinite}@keyframes wWave{to{transform:translateX(-20px)}}
 .big[disabled]{background:#E3F3E6;color:#3E8E5A;box-shadow:none;cursor:default}
 .gbcard{margin-top:28px;background:#FFF6E6;border-radius:20px;padding:16px 18px;box-shadow:0 6px 0 rgba(0,0,0,.3),inset 0 0 0 3px #E9DCCB}
 .gbtitle{font:700 32px/1.1 Gaegu,cursive;color:#5A3826;text-align:center;margin-bottom:10px}
@@ -191,7 +246,6 @@ main{padding-bottom:110px}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .demo{background:#FFE3A1;color:#5A3826;border-radius:12px;padding:8px 12px;margin-top:14px;font-size:14px;text-align:center}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-.passport .slot.on.fest{box-shadow:0 0 0 2.5px #F2C96B inset;background:#FFF7E3}
 </style>
 </head>
 <body>
@@ -239,7 +293,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/18 a</div>
+<div id="ver">cafe website · version 11/18 b</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -446,19 +500,43 @@ function nookSVG(b) {
     <g transform="translate(${W - 60} 84)">${stack}${ribbon}</g>
   </svg>`;
 }
-function bookshelfHTML() {
+const monthKey = t => { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: CAFE_TIMEZONE, year: "numeric", month: "2-digit" }).formatToParts(new Date(t)).forEach(x => p[x.type] = x.value); return `${p.year}-${p.month}`; };
+const monthName = () => new Date().toLocaleString("en-US", { timeZone: CAFE_TIMEZONE, month: "long" }).toLowerCase();
+function shelfTopBooks(login) {   // little books standing on top of the card, like on stream: one gets colored in for every book finished this month
+  let seed = (strHash(String(login)) % 233280) || 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const book = () => `<span class="bkSpine" style="width:${15 + Math.round(rnd() * 8)}px;height:${34 + Math.round(rnd() * 20)}px"></span>`;
+  const flat = c => `<span class="flat" style="width:${48 + Math.round(rnd() * 12)}px;height:10px;background-color:${c}"></span>`;
+  return `<div class="bkTop l">${Array.from({ length: 14 }, book).join("")}</div><div class="bkTop r"><div class="stack">${flat("#E7D3BD")}${flat("#F1E2CE")}${flat("#DCC3A8")}</div>${Array.from({ length: 14 }, book).join("")}</div>`;
+}
+function fillShelfTop(card, month) {   // drop books that would bump into the ribbon or hang off the card, then color one per book finished this month
+  const rib = card.querySelector(".czRib"), cr = card.getBoundingClientRect(); if (!rib) return;
+  const rr = rib.getBoundingClientRect();
+  card.querySelectorAll(".bkTop").forEach(g => {
+    const fromLeft = g.classList.contains("l"); let cut = false;
+    [...g.children].forEach(el => { const r = el.getBoundingClientRect(); if (cut || (fromLeft ? r.right > rr.left - 10 : r.left < rr.right + 10) || r.left < cr.left + 26 || r.right > cr.right - 26) { cut = true; el.remove(); } });
+  });
+  const spines = [...card.querySelectorAll(".bkTop .bkSpine")].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+  spines.forEach((el, i) => { if (i < month.length) el.style.backgroundColor = bookColor(month[i].t); else el.classList.add("ghost"); });
+  const filled = spines.filter(el => !el.classList.contains("ghost")), last = filled[filled.length - 1];
+  if (last && filled.length < spines.length) last.style.transform = `rotate(${last.closest(".l") ? 12 : -12}deg)`;
+}
+function bookshelfHTML() {   // looks like the bookshelf that pops up on stream (!bookshelf)
   const b = mine.books && Array.isArray(mine.books.reading) ? mine.books : { reading: [], finished: [] }, fin = b.finished.map((x, i) => ({ x, i })).reverse();
   const finPages = Math.max(1, Math.ceil(fin.length / BOOKS_PER_PAGE)); finPage = Math.min(finPage, finPages - 1);
   const shown = fin.slice(finPage * BOOKS_PER_PAGE, finPage * BOOKS_PER_PAGE + BOOKS_PER_PAGE);
-  return `<div class="card shelf"><div class="shd">📚 my book nook <span>only you can see this</span></div>
-    ${nookSVG(b)}
+  const mk = monthKey(Date.now()), month = b.finished.filter(x => x.done && monthKey(x.done) === mk);
+  const rows = Math.max(3, b.reading.length, shown.length), pad = n => '<div class="ln"></div>'.repeat(Math.max(0, rows - n));
+  return `<div class="card shelf cz" data-login="${esc(mine.login)}">${shelfTopBooks(mine.login)}<div class="czIn">
+    <div class="czRib">♡ ${esc(mine.display || mine.login)}'s bookshelf ♡</div>
     <div class="shcols">
-      <div><h4>currently reading</h4>${b.reading.length ? b.reading.map((x, i) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>started ${md(x.at)}</small></div><button class="soft" data-fin="${i}">finished ✓</button><button class="btn x" data-rmr="${i}" aria-label="remove">×</button></div>`).join("") : `<p class="empty">nothing yet ♡</p>`}
+      <div class="page"><h4>📖 reading now</h4>${b.reading.map((x, i) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>#${i + 1} • started ${md(x.at)}</small></div><button class="soft" data-fin="${i}">finished ✓</button><button class="btn x" data-rmr="${i}" aria-label="remove">×</button></div>`).join("")}${b.reading.length ? "" : `<p class="empty">nothing yet ♡ add one below</p>`}${pad(b.reading.length + (b.reading.length ? 0 : 1))}
         ${b.reading.length < 5 ? `<form class="radd" id="bookForm"><input id="bookTitle" maxlength="80" placeholder="add a book you're reading" autocomplete="off"><button class="big">add</button></form>` : ""}</div>
-      <div><h4 class="fin">finished <span class="ck">✓</span>${fin.length ? ` · ${fin.length}` : ""}</h4>${fin.length ? shown.map(({ x, i }) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>finished ${md(x.done)}</small></div><button class="btn x" data-rmf="${i}" aria-label="remove">×</button></div>`).join("") + (finPages > 1 ? `<div class="gbpages"><button class="soft" id="finPrev" ${finPage === 0 ? "disabled" : ""}>‹ previous</button><span>page ${finPage + 1} of ${finPages}</span><button class="soft" id="finNext" ${finPage >= finPages - 1 ? "disabled" : ""}>next ›</button></div>` : "") : `<p class="empty">none yet ♡</p>`}
+      <div class="page"><h4>✨ finished${fin.length ? ` <span class="n">${fin.length}</span>` : ""}<span class="mo">${monthName()}: ${month.length} 📚</span></h4>${shown.map(({ x, i }) => `<div class="bkr"><i style="background:${bookColor(x.t)}"></i><div class="bt">${esc(x.t)}<small>finished ${md(x.done)} ✓</small></div><button class="btn x" data-rmf="${i}" aria-label="remove">×</button></div>`).join("")}${fin.length ? "" : `<p class="empty">your finished books will live here 📖</p>`}${pad(shown.length + (fin.length ? 0 : 1))}
+        ${finPages > 1 ? `<div class="gbpages"><button class="soft" id="finPrev" ${finPage === 0 ? "disabled" : ""}>‹ previous</button><span>page ${finPage + 1} of ${finPages}</span><button class="soft" id="finNext" ${finPage >= finPages - 1 ? "disabled" : ""}>next ›</button></div>` : ""}
         <form class="radd" id="doneForm"><input id="doneTitle" maxlength="80" placeholder="add a book you finished" autocomplete="off"><button class="big">add</button></form></div>
     </div>
-    <p class="hint">same shelf as <b>!reading</b> and <b>!finished</b> on stream · hover a book to see its title</p></div>`;
+    <div class="shfoot">same shelf as <b>!reading [title]</b> and <b>!finished</b> on stream • only you can see this</div>
+  </div><div class="czTape l"></div><div class="czTape r"></div></div>`;
 }
 /* ---------- daily check-in (boba passport) and the guestbook ---------- */
 function cafeDay(d = new Date()) { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: CAFE_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).forEach(x => p[x.type] = x.value); return `${p.year}-${p.month}-${p.day}`; }
@@ -531,18 +609,111 @@ const cup = i => { const c = [["#E8C9A6", "#C99A6B"], ["#D9C2F0", "#A98BD8"], ["
   return `<svg viewBox="0 0 50 54" width="40" height="44"><path d="M31 2l-4 14" stroke="${c[1]}" stroke-width="3.4" stroke-linecap="round"/><path d="M10 15q15-9 30 0v3H10z" fill="#fff" stroke="${c[1]}" stroke-width="1.6"/><path d="M11 18h28l-3.4 30q-.4 3-3.4 3H17.8q-3 0-3.4-3z" fill="${c[0]}" stroke="${c[1]}" stroke-width="1.6"/><g fill="#5A3826"><circle cx="18" cy="44" r="2.3"/><circle cx="24" cy="46" r="2.3"/><circle cx="30" cy="44" r="2.3"/><circle cx="21" cy="40" r="2.3"/><circle cx="28" cy="40" r="2.3"/></g><circle cx="20" cy="28" r="1.6" fill="#5A3826"/><circle cx="30" cy="28" r="1.6" fill="#5A3826"/><path d="M23 31q2 2 4 0" stroke="#5A3826" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>`; };
 // a filled passport stays full until the next check-in (passports filled before this change were emptied right away, so show those full too)
 const passStamps = ci => !ci ? 0 : (!ci.stamps && ci.total > 0 ? CARD_SIZE : ci.stamps || 0);
-function passportHTML() {
+const PASS_TEAS = [["#E8C9A6", "#C99A6B"], ["#D9C2F0", "#A98BD8"], ["#CDEBC0", "#8DBF7A"], ["#F9C6D6", "#E890AB"], ["#FFE3A1", "#E8B860"]];
+const FESTIVE_BADGE = { newyear: "🎆", lunar: "🧧", valentines: "💗", easter: "🐣", july4: "🎇", nationalday: "🇸🇬", birthday: "🎂", halloween: "🎃", thanksgiving: "🦃", christmas: "🎄" };
+function bobaStamp(i) {   // a little kawaii boba cup
+  const [tea, deep] = PASS_TEAS[i % PASS_TEAS.length];
+  return `<svg viewBox="0 0 50 54" style="--r:${(i * 37) % 16 - 8}deg;transform:rotate(${(i * 37) % 16 - 8}deg)">
+    <path d="M31 2l-4 14" stroke="${deep}" stroke-width="3.4" stroke-linecap="round"/>
+    <path d="M10 15q15-9 30 0v3H10z" fill="#FFFFFF" stroke="${deep}" stroke-width="1.6"/>
+    <path d="M11 18h28l-3.4 30q-.4 3-3.4 3H17.8q-3 0-3.4-3z" fill="${tea}" stroke="${deep}" stroke-width="1.6" stroke-linejoin="round"/>
+    <g fill="#5A3826">${[[18,44],[24,46],[30,44],[21,40],[28,40]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="2.3"/>`).join("")}</g>
+    <circle cx="20" cy="28" r="1.6" fill="#5A3826"/><circle cx="30" cy="28" r="1.6" fill="#5A3826"/>
+    <path d="M23 31q2 2 4 0" stroke="#5A3826" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    <circle cx="17" cy="31" r="1.8" fill="#F28DAA" opacity=".55"/><circle cx="33" cy="31" r="1.8" fill="#F28DAA" opacity=".55"/>
+  </svg>`;
+}
+
+function centerStamp(svg) {   // same as on stream: each cup (straw, hat and all) sits dead center in its circle, keeping its little tilt
+  try {
+    const tilt = (svg.style.transform.match(/rotate\(([-\d.]+)deg\)/) || [0, 0])[1];
+    svg.style.transform = `rotate(${tilt}deg)`;
+    const b = svg.getBBox(); if (!b.width) return;
+    const cx = b.x + b.width / 2, cy = b.y + b.height / 2, h = Math.max(60, b.height + 10, (b.width + 10) * 54 / 50), w = h * 50 / 54;
+    svg.setAttribute("viewBox", `${(cx - w / 2).toFixed(2)} ${(cy - h / 2).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`); svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  } catch (e) {}
+}
+function passportHTML() {   // looks like the boba passport that pops up on stream
   const raw = mine.checkin || { stamps: 0, cards: 0, total: 0, streak: 0, last: "" }, done = raw.last === cafeDay();
-  const ci = Object.assign({}, raw, { stamps: passStamps(raw) }), full = ci.stamps >= CARD_SIZE;
-  const slots = Array.from({ length: CARD_SIZE }, (_, i) => `<div class="slot ${i < ci.stamps ? "on" : ""}${i < ci.stamps && ci.fest && ci.fest[i] ? " fest" : ""}">${i < ci.stamps ? (ci.fest && ci.fest[i] ? festiveStamp(ci.fest[i], 40, 45) : cup(i)) : ""}</div>`).join("");
+  const ci = Object.assign({}, raw, { stamps: passStamps(raw) }), full = ci.stamps >= CARD_SIZE, no = full ? (ci.cards || 1) : (ci.cards || 0) + 1;
+  const slots = Array.from({ length: CARD_SIZE }, (_, i) => {
+    if (i >= ci.stamps) return `<div class="slot">${i + 1}</div>`;
+    const f = ci.fest && ci.fest[i];
+    return `<div class="slot on${f ? " fest" : ""}">${f ? festiveStamp(f, 50, 56, (i * 37) % 16 - 8) + `<span class="badge">${FESTIVE_BADGE[f] || "✨"}</span>` : bobaStamp(i)}</div>`;
+  }).join("");
   const left = CARD_SIZE - (ci.stamps || 0);
-  return `<div class="card passport"><div class="pin">
-      <div class="ph"><span class="av">${esc((mine.display || mine.login).charAt(0).toUpperCase())}</span><span class="pnm">${esc(mine.display || mine.login)}</span><span class="lb">boba passport</span></div>
+  return `<div class="card passport cz"><div class="czIn">
+      <div class="czRib">♡ boba passport ♡</div>
+      <div class="ph"><span class="pnm">${esc(mine.display || mine.login)}</span>${ci.streak > 1 ? `<span class="lb">🔥 ${ci.streak}-day streak</span>` : ""}<span class="lb">card #${no}</span></div>
       <div class="grid">${slots}</div>
-      <div class="pf">${full ? `passport #${ci.cards || 1} complete! 🎉` : `passport #${(ci.cards || 0) + 1} · <b>${left}</b> more ${left === 1 ? "stamp" : "stamps"} to fill it${ci.cards ? ` · ${ci.cards} filled 🎫` : ""}`}${ci.streak > 1 && done ? ` · ${ci.streak}-day streak 🔥` : ""}</div>
+      <div class="pf">${full ? `you finished passport #${no}! 🎉` : `<b>${left}</b> more ${left === 1 ? "stamp" : "stamps"} until you finish passport #${no} 🧋`}</div>
       <div class="center">${done ? `<button class="big" disabled>checked in today ✓</button>` : `<button class="big" id="checkin">check in today 🧋</button>`}</div>
       <p class="hint center">one stamp a day, here or with !checkin on stream (they share the same passport)</p>
-    </div></div>`;
+    </div><div class="czTape l"></div></div>`;
+}
+/* ---------- my water jug (the same jug as !water on stream; it empties at midnight, cafe time) ---------- */
+const WATER_GOAL_ML = 2000, WATER_MAX_ADD_ML = 3000, WATER_MAX_DAY_ML = 6000;
+const fmtOz = ml => { const oz = ml / 29.5735; return `${oz < 10 && Math.round(oz * 10) % 10 ? oz.toFixed(1) : Math.round(oz)} fl oz`; };
+const fmtMl = ml => ml >= 1000 ? `${(ml / 1000).toFixed(ml % 1000 ? (ml % 100 ? 2 : 1) : 0)}L` : `${Math.round(ml)}ml`;
+function parseWater(a, unit) {   // same as on stream: "500ml", "1L", "2 cups", "16oz", "1 bottle", or just "500" (ml) / "2" (glasses)
+  const t = (a || "").toLowerCase().replace(/^(add|drank|drink|had)\s+/, "").replace(/\ba\b|\ban\b/, "1").trim();
+  const m = t.match(/^(\d+(?:\.\d+)?)\s*(fl\.?\s*oz|fluid\s*ounces?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|oz|ounces?|cups?|glass(?:es)?|bottles?|sips?)?\b/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]), u = m[2] || "";
+  if (/oz|ounce/.test(u)) return n * 29.5735;
+  if (/^m/.test(u)) return n; if (/^l/.test(u)) return n * 1000; if (/^o/.test(u)) return n * 29.57;
+  if (/^(cup|glass)/.test(u)) return n * 250; if (/^bottle/.test(u)) return n * 500; if (/^sip/.test(u)) return n * 30;
+  if (unit === "oz") return n * 29.5735;   // oz people: a bare number means oz
+  return n <= 20 ? n * 250 : n;
+}
+function myWater() { const w = mine && mine.water, today = cafeDay(); const goal = (w && w.goal) || WATER_GOAL_ML, unit = w && w.unit === "oz" ? "oz" : "ml"; return w && w.day === today ? { ml: +w.ml || 0, last: w.last || [], goal, unit } : { ml: 0, last: [], goal, unit }; }
+const wFmt = (ml, unit) => unit === "oz" ? fmtOz(ml) : fmtMl(ml);
+function waterPatch(fn, msg) {
+  mutateRow(row => {
+    const today = cafeDay(), old = row.water || {}, w = { day: today, ml: old.day === today ? +old.ml || 0 : 0, last: old.day === today && Array.isArray(old.last) ? old.last : [], goal: old.goal || null, unit: old.unit === "oz" ? "oz" : "ml" };
+    if (fn(w) === false) return null;
+    w.at = Date.now(); return { water: w };
+  }, msg);
+}
+function addWater(text) {
+  const unit = myWater().unit;
+  let ml = Math.round(parseWater(text, unit));
+  if (!ml) { toast("try 500ml, 1L or 2 cups"); return; }
+  waterPatch(w => {
+    ml = Math.min(ml, WATER_MAX_ADD_ML, Math.max(0, WATER_MAX_DAY_ML - w.ml));
+    if (!ml) { toast(`you've logged ${wFmt(w.ml, unit)} today, that's the most for one day!`); return false; }
+    const goal = w.goal || WATER_GOAL_ML, before = w.ml; w.ml += ml; w.last = [...w.last, ml].slice(-5);
+    window.waterMsg = before < goal && w.ml >= goal ? "daily water goal reached! 🎉💧" : `+${wFmt(ml, unit)} 💧`;
+  }, () => window.waterMsg);
+}
+function undoWater() { const unit = myWater().unit; waterPatch(w => { const back = w.last.pop(); if (!back) { toast("nothing to undo"); return false; } w.ml = Math.max(0, w.ml - back); window.waterMsg = `took ${wFmt(back, unit)} off`; }, () => window.waterMsg); }
+function setWaterUnit(unit) { waterPatch(w => { if (w.unit === unit) return false; w.unit = unit; }, `your water now shows in ${unit === "oz" ? "fl oz" : "ml"}`); }
+function setWaterGoal(text) {
+  const unit = myWater().unit, g = Math.round(parseWater(text, unit));
+  if (!g || g < 250 || g > WATER_MAX_DAY_ML) { toast(`pick a goal between ${wFmt(250, unit)} and ${wFmt(WATER_MAX_DAY_ML, unit)}`); return; }
+  waterPatch(w => { w.goal = g; }, `your daily water goal is now ${wFmt(g, unit)} 💧`);
+}
+function waterJug(fr) {
+  const y = (50 * (1 - Math.min(1, fr))).toFixed(1);
+  return `<svg viewBox="0 0 58 80" aria-hidden="true"><defs><clipPath id="wjc"><path d="M12 22h30v46q0 8-8 8H20q-8 0-8-8z"/></clipPath></defs>
+    <path d="M42 30q12 0 12 12t-12 12" fill="none" stroke="#A9C9E6" stroke-width="4" stroke-linecap="round"/>
+    <path d="M12 22h30v46q0 8-8 8H20q-8 0-8-8z" fill="#F4FAFF" stroke="#8FB6DA" stroke-width="2"/>
+    <g clip-path="url(#wjc)"><g class="lvl" style="transform:translateY(${y}px)"><g class="wave"><path d="M0 24q5-3 10 0t10 0t10 0t10 0t10 0t10 0t10 0v60H0z" fill="#8CC2EC"/><path d="M0 26q5-2 10 0t10 0t10 0t10 0t10 0t10 0t10 0v60H0z" fill="#6FAFE3" opacity=".55"/></g></g></g>
+    <path d="M16 26v38" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+    <rect x="10" y="17" width="34" height="6" rx="3" fill="#CFE3F5" stroke="#8FB6DA" stroke-width="1.6"/><path d="M33 18l6-16" stroke="#F48FB1" stroke-width="3" stroke-linecap="round"/></svg>`;
+}
+function waterHTML() {
+  const w = myWater(), done = w.ml >= w.goal, u = w.unit, F = ml => wFmt(ml, u);
+  const quick = u === "oz" ? [["8oz", "+ 8 fl oz"], ["16oz", "+ 16 fl oz"], ["32oz", "+ 32 fl oz"]] : [["250ml", "+ 250ml"], ["500ml", "+ 500ml"], ["1L", "+ 1L"]];
+  return `<div class="card water${done ? " done" : ""}"><div class="win">
+    <div class="wh"><span class="wt">💧 my water jug</span><span class="wunit"><button data-u="ml" class="${u === "ml" ? "on" : ""}">ml</button><button data-u="oz" class="${u === "oz" ? "on" : ""}">fl oz</button></span><span class="lb">goal ${F(w.goal)}</span></div>
+    <div class="wbody">${waterJug(w.ml / w.goal)}<div><div class="wnum">${F(w.ml)} <small>/ ${F(w.goal)} today</small></div>
+      <div class="wsub">${done ? "daily water goal reached! 🎉" : `${F(w.goal - w.ml)} to go`}</div></div></div>
+    <div class="wbtns">${quick.map(([v, t]) => `<button data-w="${v}">${t}</button>`).join("")}${w.last.length ? `<button class="ghost" id="wUndo">undo</button>` : ""}</div>
+    <form id="wForm"><input id="wAmt" placeholder="${u === "oz" ? "how much? like 12 fl oz or 2 cups" : "how much? like 350ml or 2 cups"}" maxlength="20"><button>add</button></form>
+    <form id="wGoalForm"><input id="wGoal" placeholder="${u === "oz" ? "daily goal, like 64 fl oz" : "daily goal, like 2.5L"}" maxlength="12"><button>set goal</button></form>
+    <p class="hint center">same jug as !water on stream • it empties at midnight (cafe time)</p>
+  </div></div>`;
 }
 const GB_PER_PAGE = 10;
 let gbPage = 0;
@@ -646,8 +817,17 @@ function renderInner() {
     $("repWday").onchange = () => { repForm.wday = $("repWday").value; };
     rf.onsubmit = e => { e.preventDefault(); addRepeat($("repText").value, $("repTime").value, $("repType").value, $("repDay").value, $("repWday").value); };
   }
-  app.insertAdjacentHTML("beforeend", bookshelfHTML());   // book nook first, then the boba passport
+  // under your ticket: water jug, then the boba passport, then the bookshelf (the guestbook comes after, below the panel)
+  app.insertAdjacentHTML("beforeend", waterHTML());
   app.insertAdjacentHTML("beforeend", passportHTML());
+  app.insertAdjacentHTML("beforeend", bookshelfHTML());
+  app.querySelectorAll(".passport .slot svg").forEach(centerStamp);
+  { const sh = app.querySelector(".shelf.cz"); if (sh) { const bk = mine.books && Array.isArray(mine.books.finished) ? mine.books.finished : [], mk = monthKey(Date.now()); fillShelfTop(sh, bk.filter(x => x.done && monthKey(x.done) === mk).sort((p, q) => p.done - q.done)); } }
+  app.querySelectorAll("[data-w]").forEach(b => b.onclick = () => addWater(b.dataset.w));
+  app.querySelectorAll(".water [data-u]").forEach(b => b.onclick = () => setWaterUnit(b.dataset.u));
+  { const u = $("wUndo"); if (u) u.onclick = () => undoWater(); }
+  { const f = $("wForm"); if (f) f.onsubmit = e => { e.preventDefault(); const t = $("wAmt").value; $("wAmt").value = ""; addWater(t); }; }
+  { const f = $("wGoalForm"); if (f) f.onsubmit = e => { e.preventDefault(); const t = $("wGoal").value; $("wGoal").value = ""; setWaterGoal(t); }; }
   app.querySelectorAll("[data-fin]").forEach(b => b.onclick = () => finishBook(+b.dataset.fin));
   app.querySelectorAll("[data-rmr]").forEach(b => b.onclick = () => removeBook("reading", +b.dataset.rmr));
   app.querySelectorAll("[data-rmf]").forEach(b => b.onclick = () => removeBook("finished", +b.dataset.rmf));
