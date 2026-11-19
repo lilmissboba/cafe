@@ -293,7 +293,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/19 c</div>
+<div id="ver">cafe website · version 11/20 a</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -381,7 +381,8 @@ async function refreshMine() {   // picks up tasks that arrive from other stream
   const r = await loadMine(); if (r) { mine = r; if (editing < 0) render(); }
 }
 async function mutateRow(patchFor, okMsg) {   // read the latest, change it, save it (retries if the cafe changed it at the same moment)
-  for (let tries = 0; tries < 3; tries++) {
+  for (let tries = 0; tries < 8; tries++) {   // the cafe or the task-sharing helper may be saving at the same moment: wait a beat and try again
+    if (tries) await new Promise(r => setTimeout(r, 150 + Math.random() * 350 * tries));
     const row = await loadMine(); if (!row) return;
     const patch = patchFor(JSON.parse(JSON.stringify(row)));
     if (!patch) return;
