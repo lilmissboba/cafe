@@ -293,7 +293,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/18 b</div>
+<div id="ver">cafe website · version 11/19 a</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -848,7 +848,8 @@ function renderInner() {
   });
 }
 const miniTicket = r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current;
-  const body = r.status === "lurking" && r.in_cafe ? `<li>☕ cozy lurking by the window</li>` : t.length ? t.slice(0, 6).map((x, i) => `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${cur === i ? " ★" : ""}</li>`).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
+  const body = r.status === "lurking" && r.in_cafe ? `<li>☕ cozy lurking by the window</li>` : t.length ? (cur >= 0 && cur < t.length ? [cur, ...t.map((_, i) => i).filter(i => i !== cur)] : t.map((_, i) => i)).slice(0, 6).map(i => { const x = t[i];   // the task they're focusing on goes first (keeping its number)
+      return `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${cur === i ? " ★" : ""}</li>`; }).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
   return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span>${r.web ? ` <span class="pill web" title="also on the website">💻</span>` : ""}${r.you ? ` <span class="pill pink">you ♡</span>` : ""}</div><ul>${body}</ul></div></div>`; };
 function pinboard(box, rows) {   // even columns: measure every ticket, then place the tallest first, each into whichever column is shortest
   const n = Math.max(1, Math.floor((box.clientWidth + 18) / 238));
