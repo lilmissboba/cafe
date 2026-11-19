@@ -293,7 +293,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/19 a</div>
+<div id="ver">cafe website · version 11/19 b</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -747,11 +747,16 @@ function addTasks(text) {
     items.length > 1 ? `added ${items.length} tasks!` : "task added!");
 }
 function toggleDone(i) {
+  // do what the box on screen showed: ticking an unticked box marks it done (even if it was just finished on stream and the
+  // page hasn't caught up yet, it stays done instead of being flipped back), and the task is found by its text in case the list moved
+  const seen = mine && mine.tasks[i]; if (!seen) return;
+  const want = !seen.done, text = seen.text;
   mutate((t, st) => {
-    const x = t[i]; if (!x) return false;
-    if (!x.done) { x.done = true; x.doneAt = Date.now(); x.webDone = true; if (st.current === i) st.current = -1; }
+    let k = t[i] && t[i].text === text ? i : t.findIndex(x => x.text === text); const x = t[k]; if (!x) return false;
+    if (!!x.done === want) return false;   // already that way
+    if (want) { x.done = true; x.doneAt = Date.now(); x.webDone = true; if (st.current === k) st.current = -1; }
     else { x.done = false; delete x.doneAt; delete x.webDone; }
-  }, mine && mine.tasks[i] && !mine.tasks[i].done ? "done! ✓ +1 pearl" : "put back on your list");
+  }, want ? "done! ✓ +1 pearl" : "put back on your list");
 }
 function focusTask(i) { mutate((t, st) => { if (!t[i] || t[i].done) return false; st.current = st.current === i ? -1 : i; }, mine && mine.current === i ? "stopped focusing" : "focusing ♡"); }
 function urgentTask(i) { const was = mine && mine.tasks[i] && mine.tasks[i].urgent; mutate(t => { if (!t[i] || t[i].done) return false; t[i].urgent = !t[i].urgent; }, was ? "not urgent anymore" : "marked urgent ❗"); }
