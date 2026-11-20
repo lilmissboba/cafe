@@ -71,6 +71,12 @@ li .tx:hover{background:rgba(0,0,0,.04)}
 li.done .tx{text-decoration:line-through;color:#A8937F}
 li .tag{font:600 12px Fredoka,sans-serif;color:var(--pink);background:#fff;border-radius:999px;padding:2px 8px;flex:none}
 li .tag.daily{color:#3E8E5A;background:#E3F3E6}
+li .tag.fo{color:#8A5A44;background:#fff;box-shadow:0 0 0 1.5px #E3C9B5 inset;cursor:pointer}
+li .btn.f{background:none;opacity:.45;padding:4px 6px}li .btn.f:hover{opacity:1}
+.folders{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.fchip{font:600 13px Fredoka,sans-serif;border:0;border-radius:999px;padding:5px 11px;background:#F6EDE4;color:#7A5A48;cursor:pointer}
+.fchip.on{background:var(--pink);color:#fff}.fchip b{font-weight:700;opacity:.7;margin-left:2px}
+.mf{font-size:.85em;opacity:.65;border:1px solid currentColor;border-radius:999px;padding:0 5px;margin-left:2px}
 @media (max-width:560px){   /* phones: the task text keeps the whole line; tags and buttons drop to a second line under it */
   li{flex-wrap:wrap;row-gap:6px}li .tx{flex:1 1 calc(100% - 76px)}li .tx + *{margin-left:66px}}
 li .btn{flex:none;border:0;border-radius:10px;padding:7px 10px;font:600 14px Fredoka,sans-serif;cursor:pointer;background:#F3E6D8;color:var(--ink)}
@@ -293,7 +299,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/20 a</div>
+<div id="ver">cafe website · version 11/20 b</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -308,6 +314,16 @@ main{padding-bottom:110px}
 const SUPABASE_URL = "https://gednciiobqwcocobsgim.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlZG5jaWlvYnF3Y29jb2JzZ2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2MTk3NDUsImV4cCI6MjEwOTE5NTc0NX0.Nh5kkIWbKkjwVxSuCVJzMVuGn-M6IQPbZMqUNp3pf6s";     // the "anon public" key (safe to put on a website)
 const MAX_TASKS = 40;
+/* ---- folders: "work: finish report" in the add box, a folder tag on each task, and folder filters (up to 10, same as on stream) ---- */
+const MAX_FOLDERS = 10;
+let folderView = "";   // "" shows every task
+const cleanFolder = x => String(x || "").toLowerCase().replace(/[^a-z0-9 _-]/g, "").trim().replace(/\s+/g, "-").slice(0, 20);
+function splitFolder(arg) {   // "work: finish report" -> folder "work" (must start with a letter, so 9:30 and links don't count)
+  const m = String(arg || "").match(/^([a-z][a-z0-9 _-]{0,19}?)\s*:\s*(\S[\s\S]*)$/i);
+  if (!m || /^https?$/i.test(m[1]) || m[2].startsWith("//")) return { folder: "", rest: arg };
+  return { folder: cleanFolder(m[1]), rest: m[2] };
+}
+const foldersOfList = t => [...new Set((t || []).map(x => x.folder).filter(Boolean))];
 const MAX_REPEATS = 10, MAX_REPEATS_HOST = 10, HOST = "lilmissboba";   // same limits as the cafe
 const TWITCH_URL = "https://www.twitch.tv/lilmissboba";
 const TWITCH_CHANNEL = "lilmissboba";
@@ -742,9 +758,12 @@ async function hereNow() {
 const twitchLogin = () => sb.auth.signInWithOAuth({ provider: "twitch", options: { redirectTo: location.origin + location.pathname, scopes: "chat:read chat:edit" } });
 /* ---------- what you can do ---------- */
 function addTasks(text) {
-  const items = text.split(";").map(x => x.trim()).filter(Boolean).map(x => x.slice(0, 200));
+  const fsp = splitFolder(text), folder = fsp.folder || folderView || "";   // typed "work: ..." or the folder you're looking at
+  const items = (fsp.folder ? fsp.rest : text).split(";").map(x => x.trim()).filter(Boolean).map(x => x.slice(0, 200));
   if (!items.length) return;
-  mutate(t => { if (t.length + items.length > MAX_TASKS) { toast(`your list is full (${MAX_TASKS} max)`); return false; } items.forEach(x => t.push({ text: x, done: false, addedAt: Date.now() })); },
+  mutate(t => { if (t.length + items.length > MAX_TASKS) { toast(`your list is full (${MAX_TASKS} max)`); return false; }
+    if (folder && !foldersOfList(t).includes(folder) && foldersOfList(t).length >= MAX_FOLDERS) { toast(`you can have up to ${MAX_FOLDERS} folders`); return false; }
+    items.forEach(x => t.push(Object.assign({ text: x, done: false, addedAt: Date.now() }, folder ? { folder } : {}))); },
     items.length > 1 ? `added ${items.length} tasks!` : "task added!");
 }
 function toggleDone(i) {
@@ -758,6 +777,15 @@ function toggleDone(i) {
     if (want) { x.done = true; x.doneAt = Date.now(); x.webDone = true; if (st.current === k) st.current = -1; }
     else { x.done = false; delete x.doneAt; delete x.webDone; }
   }, want ? "done! ✓ +1 pearl" : "put back on your list");
+}
+function folderTask(i) {   // put a task in a folder (or take it out)
+  const seen = mine && mine.tasks[i]; if (!seen) return;
+  const ans = prompt(`folder for "${seen.text}"\n(type a name like work or study, or leave empty for no folder)`, seen.folder || "");
+  if (ans === null) return;
+  const f = cleanFolder(ans), text = seen.text;
+  mutate(t => { const k = t[i] && t[i].text === text ? i : t.findIndex(x => x.text === text); const x = t[k]; if (!x) return false;
+    if (f && !foldersOfList(t).includes(f) && foldersOfList(t).length >= MAX_FOLDERS) { toast(`you can have up to ${MAX_FOLDERS} folders`); return false; }
+    if ((x.folder || "") === f) return false; if (f) x.folder = f; else delete x.folder; }, f ? `moved to ${f} 📁` : "taken out of its folder");
 }
 function focusTask(i) { mutate((t, st) => { if (!t[i] || t[i].done) return false; st.current = st.current === i ? -1 : i; }, mine && mine.current === i ? "stopped focusing" : "focusing ♡"); }
 function urgentTask(i) { const was = mine && mine.tasks[i] && mine.tasks[i].urgent; mutate(t => { if (!t[i] || t[i].done) return false; t[i].urgent = !t[i].urgent; }, was ? "not urgent anymore" : "marked urgent ❗"); }
@@ -798,21 +826,24 @@ function renderInner() {
     return;
   }
   const t = mine.tasks || [], cur = mine.current == null ? -1 : mine.current;
-  const rows = t.map((x, i) => editing === i
+  if (folderView && !t.some(x => x.folder === folderView)) folderView = "";
+  const rows = t.map((x, i) => (folderView && x.folder !== folderView) ? "" : editing === i
     ? `<li><span class="no">${i + 1}</span><input class="edit" id="editBox" value="${esc(x.text)}" maxlength="200"><button class="btn" data-a="save" data-i="${i}">save</button></li>`
     : `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}"><span class="no">${i + 1}</span>
         <button class="chk" data-a="done" data-i="${i}" aria-label="${x.done ? "mark not done" : "mark done"}">${x.done ? "✓" : ""}</button>
         <span class="tx" data-a="edit" data-i="${i}" title="click to edit">${esc(x.text)}</span>
-        ${x.repeat || x.daily ? `<span class="tag daily">↻ repeat</span>` : ""}${cur === i ? `<span class="tag">focusing</span>` : ""}
+        ${x.folder ? `<span class="tag fo" data-a="folder" data-i="${i}" title="change folder">📁 ${esc(x.folder)}</span>` : ""}${x.repeat || x.daily ? `<span class="tag daily">↻ repeat</span>` : ""}${cur === i ? `<span class="tag">focusing</span>` : ""}
         ${x.done ? "" : `<button class="btn u ${x.urgent ? "on" : ""}" data-a="urgent" data-i="${i}" title="${x.urgent ? "not urgent" : "mark urgent"}" aria-label="${x.urgent ? "not urgent" : "mark urgent"}">❗</button><button class="btn f" data-a="focus" data-i="${i}">${cur === i ? "unfocus" : "focus"}</button>`}
-        <button class="btn x" data-a="del" data-i="${i}" aria-label="delete">×</button></li>`).join("");
+        ${x.folder ? "" : `<button class="btn f" data-a="folder" data-i="${i}" title="put in a folder" aria-label="put in a folder">📁</button>`}<button class="btn x" data-a="del" data-i="${i}" aria-label="delete">×</button></li>`).join("");
+  const fl = foldersOfList(t);
+  const folderBar = fl.length ? `<div class="folders"><button class="fchip ${folderView ? "" : "on"}" data-f="">all</button>${fl.map(f => `<button class="fchip ${folderView === f ? "on" : ""}" data-f="${esc(f)}">📁 ${esc(f)} <b>${t.filter(x => x.folder === f && !x.done).length}</b></button>`).join("")}</div>` : "";
   app.innerHTML = `<div class="card ticket"><span class="clip"></span><div class="paper">
       <div class="head"><span class="nm">${esc(mine.display || mine.login)}</span><span class="pill">✓ ${mine.pearls_today || 0} today</span>
         ${(() => { const left = t.filter(x => !x.done).length; return t.length ? `<span class="pill pink">${left ? `${left} ${left === 1 ? "task" : "tasks"} remaining` : "all done ✨"}</span>` : ""; })()}<button class="out" id="out">log out</button></div>
-      <ol>${rows || `<div class="empty">your list is empty. add your first task below ♡</div>`}</ol>
+      ${folderBar}<ol>${rows || `<div class="empty">your list is empty. add your first task below ♡</div>`}</ol>
       ${t.some(x => x.done) ? `<div class="cleardone"><button class="soft" id="clearDone">✨ clear done (${t.filter(x => x.done).length})</button></div>` : ""}
-      <form class="add" id="addForm"><input id="newTask" placeholder="add a task (use ; for several)" maxlength="400" autocomplete="off"><button class="big">add</button></form>
-      <p class="hint">tap a task to rename it · ❗ marks it urgent · tap the circle when it's done · your ticket in the cafe updates within a few seconds</p>
+      <form class="add" id="addForm"><input id="newTask" placeholder="${folderView ? `add to ${esc(folderView)} (use ; for several)` : "add a task (use ; for several, work: for a folder)"}" maxlength="400" autocomplete="off"><button class="big">add</button></form>
+      <p class="hint">tap a task to rename it · ❗ marks it urgent · 📁 puts it in a folder · tap the circle when it's done · your ticket in the cafe updates within a few seconds</p>
     </div></div>`;
   app.insertAdjacentHTML("beforeend", repeatsHTML());
   app.querySelectorAll("[data-r]").forEach(b => b.onclick = () => removeRepeat(+b.dataset.r));
@@ -845,9 +876,11 @@ function renderInner() {
   const ck = $("checkin"); if (ck) ck.onclick = () => checkIn();
   $("out").onclick = () => sb.auth.signOut();
   const cd = $("clearDone"); if (cd) cd.onclick = () => clearDone();
+  app.querySelectorAll("[data-f]").forEach(el => el.onclick = () => { folderView = el.dataset.f; render(); });
   $("addForm").onsubmit = e => { e.preventDefault(); const v = $("newTask").value; $("newTask").value = ""; addTasks(v); };
   app.querySelectorAll("[data-a]").forEach(el => el.onclick = () => {
     const i = +el.dataset.i, a = el.dataset.a;
+    if (a === "folder") { folderTask(i); return; }
     if (a === "done") toggleDone(i); else if (a === "urgent") urgentTask(i); else if (a === "focus") focusTask(i); else if (a === "del") delTask(i);
     else if (a === "edit") { editing = i; render(); const b = $("editBox"); b.focus(); b.select(); b.onkeydown = ev => { if (ev.key === "Enter") editTask(i, b.value); if (ev.key === "Escape") { editing = -1; render(); } }; }
     else if (a === "save") editTask(i, $("editBox").value);
@@ -855,7 +888,7 @@ function renderInner() {
 }
 const miniTicket = r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current;
   const body = r.status === "lurking" && r.in_cafe ? `<li>☕ cozy lurking by the window</li>` : t.length ? (cur >= 0 && cur < t.length ? [cur, ...t.map((_, i) => i).filter(i => i !== cur)] : t.map((_, i) => i)).slice(0, 6).map(i => { const x = t[i];   // the task they're focusing on goes first (keeping its number)
-      return `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${cur === i ? " ★" : ""}</li>`; }).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
+      return `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${x.folder ? ` <span class="mf">${esc(x.folder)}</span>` : ""}${cur === i ? " ★" : ""}</li>`; }).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
   return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span>${r.web ? ` <span class="pill web" title="also on the website">💻</span>` : ""}${r.you ? ` <span class="pill pink">you ♡</span>` : ""}</div><ul>${body}</ul></div></div>`; };
 function pinboard(box, rows) {   // even columns: measure every ticket, then place the tallest first, each into whichever column is shortest
   const n = Math.max(1, Math.floor((box.clientWidth + 18) / 238));
@@ -914,7 +947,7 @@ async function renderOthers() {   // when the stream's on: everyone in the cafe 
   pinboard($("others"), list.map(r => Object.assign({}, r, { web: live && webHere.has(r.login) })));
   return;
   $("others").innerHTML = list.map(r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current, web = live && webHere.has(r.login) ? ` <span class="pill web" title="also on the website">💻</span>` : "";
-    const body = r.status === "lurking" ? `<li>☕ cozy lurking by the window</li>` : t.length ? t.slice(0, 6).map((x, i) => `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${cur === i ? " ★" : ""}</li>`).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
+    const body = r.status === "lurking" ? `<li>☕ cozy lurking by the window</li>` : t.length ? t.slice(0, 6).map((x, i) => `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${x.folder ? ` <span class="mf">${esc(x.folder)}</span>` : ""}${cur === i ? " ★" : ""}</li>`).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
     return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span>${web}</div><ul>${body}</ul></div></div>`; }).join("");
 }
 
