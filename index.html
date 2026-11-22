@@ -299,7 +299,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/20 b</div>
+<div id="ver">cafe website · version 11/22 a</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -402,14 +402,18 @@ async function mutateRow(patchFor, okMsg) {   // read the latest, change it, sav
     const row = await loadMine(); if (!row) return;
     const patch = patchFor(JSON.parse(JSON.stringify(row)));
     if (!patch) return;
-    const { data, error } = await sb.from("cafe_lists").update(Object.assign(patch, { updated_by: "web", updated_at: new Date().toISOString() }))
+    let { data, error } = await sb.from("cafe_lists").update(Object.assign(patch, { updated_by: "web", updated_at: new Date().toISOString() }))
       .eq("login", row.login).eq("updated_at", row.updated_at).select();
+    if (error && /pearls_day/.test(error.message || "") && "pearls_day" in patch) { hasPearlsDay = false; delete patch.pearls_day; tries--; continue; }   // run the latest SQL to add it
     if (!error && data && data.length) { mine = data[0]; editing = -1; render(); renderGuestbook(); if (okMsg) toast(typeof okMsg === "function" ? okMsg() : okMsg); return; }
   }
   toast("couldn't save, try again in a moment");
 }
 function mutate(change, okMsg) {
-  return mutateRow(row => { const tasks = row.tasks || [], st = { current: row.current == null ? -1 : row.current }; if (change(tasks, st) === false) return null; return { tasks, current: st.current }; }, okMsg);
+  return mutateRow(row => { const tasks = row.tasks || [], st = { current: row.current == null ? -1 : row.current, pearls: 0 }; if (change(tasks, st) === false) return null;
+    const patch = { tasks, current: st.current };
+    if (st.pearls) { patch.pearls_today = Math.max(0, pearlsOf(row) + st.pearls); if (hasPearlsDay) patch.pearls_day = cafeDay(); }   // the website counts its own ticks, even when the stream is off
+    return patch; }, okMsg);
 }
 /* ---------- repeating tasks (like !repeat, !weekly and !monthly on stream) ---------- */
 const MY_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || CAFE_TIMEZONE;
@@ -556,6 +560,10 @@ function bookshelfHTML() {   // looks like the bookshelf that pops up on stream 
   </div><div class="czTape l"></div><div class="czTape r"></div></div>`;
 }
 /* ---------- daily check-in (boba passport) and the guestbook ---------- */
+let hasPearlsDay = true;   // the database has the pearls_day column (checked when the page opens)
+const PD = () => hasPearlsDay ? ",pearls_day" : "";
+// the ✓ count for today: a count saved on an earlier day (and not reset yet because the cafe hasn't been open) shows as 0
+const pearlsOf = r => !r ? 0 : (r.pearls_day && r.pearls_day !== cafeDay() ? 0 : (r.pearls_today || 0));
 function cafeDay(d = new Date()) { const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: CAFE_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d).forEach(x => p[x.type] = x.value); return `${p.year}-${p.month}-${p.day}`; }
 let lastCheckin = null;
 /* ---------- festive passport stamps: check in ON one of these days and that day's stamp is a festive one ---------- */
@@ -774,8 +782,8 @@ function toggleDone(i) {
   mutate((t, st) => {
     let k = t[i] && t[i].text === text ? i : t.findIndex(x => x.text === text); const x = t[k]; if (!x) return false;
     if (!!x.done === want) return false;   // already that way
-    if (want) { x.done = true; x.doneAt = Date.now(); x.webDone = true; if (st.current === k) st.current = -1; }
-    else { x.done = false; delete x.doneAt; delete x.webDone; }
+    if (want) { x.done = true; x.doneAt = Date.now(); x.webDone = true; x.webCounted = true; st.pearls += 1; if (st.current === k) st.current = -1; }   // webCounted: already added to the ✓ count here, so the cafe doesn't add it again
+    else { if (x.webCounted && x.doneAt && cafeDay(new Date(x.doneAt)) === cafeDay()) st.pearls -= 1; x.done = false; delete x.doneAt; delete x.webDone; delete x.webCounted; }   // un-ticked the same day: take it back off
   }, want ? "done! ✓ +1 pearl" : "put back on your list");
 }
 function folderTask(i) {   // put a task in a folder (or take it out)
@@ -793,7 +801,7 @@ function clearDone() {   // like !cleardone on stream: removes finished tasks, k
   mutateRow(row => {   // finished-on-the-website tasks the cafe hasn't counted yet are remembered, so they still count when the cafe opens
     const t = row.tasks || [], keep = t.map((x, i) => ({ x, i })).filter(e => !e.x.done);
     if (keep.length === t.length) { toast("nothing to clear yet"); return null; }
-    const pending = (row.web_done || []).concat(t.filter(x => x.done && x.webDone).map(x => x.doneAt || Date.now()));
+    const pending = (row.web_done || []).concat(t.filter(x => x.done && x.webDone && !x.webCounted).map(x => x.doneAt || Date.now()));   // ones the website already counted don't need the cafe
     return { tasks: keep.map(e => e.x), current: keep.findIndex(e => e.i === row.current), web_done: pending };
   }, "cleared your finished tasks ✨");
 }
@@ -838,7 +846,7 @@ function renderInner() {
   const fl = foldersOfList(t);
   const folderBar = fl.length ? `<div class="folders"><button class="fchip ${folderView ? "" : "on"}" data-f="">all</button>${fl.map(f => `<button class="fchip ${folderView === f ? "on" : ""}" data-f="${esc(f)}">📁 ${esc(f)} <b>${t.filter(x => x.folder === f && !x.done).length}</b></button>`).join("")}</div>` : "";
   app.innerHTML = `<div class="card ticket"><span class="clip"></span><div class="paper">
-      <div class="head"><span class="nm">${esc(mine.display || mine.login)}</span><span class="pill">✓ ${mine.pearls_today || 0} today</span>
+      <div class="head"><span class="nm">${esc(mine.display || mine.login)}</span><span class="pill">✓ ${pearlsOf(mine)} today</span>
         ${(() => { const left = t.filter(x => !x.done).length; return t.length ? `<span class="pill pink">${left ? `${left} ${left === 1 ? "task" : "tasks"} remaining` : "all done ✨"}</span>` : ""; })()}<button class="out" id="out">log out</button></div>
       ${folderBar}<ol>${rows || `<div class="empty">your list is empty. add your first task below ♡</div>`}</ol>
       ${t.some(x => x.done) ? `<div class="cleardone"><button class="soft" id="clearDone">✨ clear done (${t.filter(x => x.done).length})</button></div>` : ""}
@@ -889,7 +897,7 @@ function renderInner() {
 const miniTicket = r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current;
   const body = r.status === "lurking" && r.in_cafe ? `<li>☕ cozy lurking by the window</li>` : t.length ? (cur >= 0 && cur < t.length ? [cur, ...t.map((_, i) => i).filter(i => i !== cur)] : t.map((_, i) => i)).slice(0, 6).map(i => { const x = t[i];   // the task they're focusing on goes first (keeping its number)
       return `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${x.folder ? ` <span class="mf">${esc(x.folder)}</span>` : ""}${cur === i ? " ★" : ""}</li>`; }).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
-  return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span>${r.web ? ` <span class="pill web" title="also on the website">💻</span>` : ""}${r.you ? ` <span class="pill pink">you ♡</span>` : ""}</div><ul>${body}</ul></div></div>`; };
+  return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${pearlsOf(r)}</span>${r.web ? ` <span class="pill web" title="also on the website">💻</span>` : ""}${r.you ? ` <span class="pill pink">you ♡</span>` : ""}</div><ul>${body}</ul></div></div>`; };
 function pinboard(box, rows) {   // even columns: measure every ticket, then place the tallest first, each into whichever column is shortest
   const n = Math.max(1, Math.floor((box.clientWidth + 18) / 238));
   box.innerHTML = Array.from({ length: n }, () => '<div class="pcol"></div>').join("");
@@ -904,7 +912,7 @@ function pinboard(box, rows) {   // even columns: measure every ticket, then pla
 let webHere = new Set();   // people with the website open right now
 async function renderWebNow(live) {
   const since = new Date(Date.now() - 5 * 60000).toISOString();
-  let { data, error } = await sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,web_seen_at,in_cafe").gt("web_seen_at", since).limit(60);
+  let { data, error } = await sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,web_seen_at,in_cafe" + PD()).gt("web_seen_at", since).limit(60);
   if (error) ({ data, error } = await sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,web_seen_at").gt("web_seen_at", since).limit(60));
   const all = error ? [] : (data || []).filter(r => r.login !== "__cafe__");
   if (mine && !all.some(r => r.login === mine.login)) all.unshift(Object.assign({}, mine));   // you're here too
@@ -929,7 +937,7 @@ async function renderOthers() {   // when the stream's on: everyone in the cafe 
   $("twtxt").textContent = open ? "the cafe is open right now! come co-work with us on twitch ♡" : "the cafe is closed for now ☾ follow to know when it opens ♡";
   document.querySelector("#twbar .twbtn").textContent = open ? "join on twitch" : "follow on twitch";
   const here = open && beat.pomo && Array.isArray(beat.pomo.here) ? beat.pomo.here : null;   // the cafe's own list of who's sitting in it right now
-  let q = sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,updated_at,in_cafe,status");
+  let q = sb.from("cafe_lists").select("login,display,tasks,current,pearls_today,updated_at,in_cafe,status" + PD());
   q = open ? (here ? q.in("login", here.length ? here : ["-"]).limit(120) : q.eq("in_cafe", true).limit(80)) : q.order("updated_at", { ascending: false }).limit(120);
   let { data, error } = await q;
   let live = open;
@@ -948,7 +956,7 @@ async function renderOthers() {   // when the stream's on: everyone in the cafe 
   return;
   $("others").innerHTML = list.map(r => { const t = r.tasks || [], cur = r.current == null ? -1 : r.current, web = live && webHere.has(r.login) ? ` <span class="pill web" title="also on the website">💻</span>` : "";
     const body = r.status === "lurking" ? `<li>☕ cozy lurking by the window</li>` : t.length ? t.slice(0, 6).map((x, i) => `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}">${i + 1}. ${x.urgent && !x.done ? "❗" : ""}${esc(x.text)}${x.folder ? ` <span class="mf">${esc(x.folder)}</span>` : ""}${cur === i ? " ★" : ""}</li>`).join("") + (t.length > 6 ? `<li>+${t.length - 6} more</li>` : "") : `<li>sipping boba 🧋</li>`;
-    return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${r.pearls_today || 0}</span>${web}</div><ul>${body}</ul></div></div>`; }).join("");
+    return `<div class="ticket mini"><span class="clip"></span><div class="paper"><div class="nm">${esc(r.display || r.login)} <span class="pill">✓ ${pearlsOf(r)}</span>${web}</div><ul>${body}</ul></div></div>`; }).join("");
 }
 
 let booting = false;
@@ -962,6 +970,7 @@ async function bootInner() {
   const { data } = await sb.auth.getSession();
   const s = data && data.session;
   me = s ? { id: String(s.user.user_metadata.provider_id || s.user.user_metadata.sub || ""), name: s.user.user_metadata.nickname || s.user.user_metadata.name || "" } : null;
+  try { const { error } = await sb.from("cafe_lists").select("pearls_day").limit(1); if (error) hasPearlsDay = false; } catch (e) { hasPearlsDay = false; }   // is the newest column there?
   mine = me ? await loadMine() : null;
   if (me && !mine && sb.rpc) {   // new here (maybe from another Miss Boba stream): make their ticket straight away
     try {
