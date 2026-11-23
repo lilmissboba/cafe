@@ -299,7 +299,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/22 a</div>
+<div id="ver">cafe website · version 11/23 a</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -316,7 +316,9 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const MAX_TASKS = 40;
 /* ---- folders: "work: finish report" in the add box, a folder tag on each task, and folder filters (up to 10, same as on stream) ---- */
 const MAX_FOLDERS = 10;
-let folderView = "";   // "" shows every task
+let folderView = "";   // "" shows every task, UNFILED shows the tasks that aren't in any folder
+const UNFILED = ":unfiled";   // a colon can't be in a folder name, so this never clashes with a real folder
+const inView = x => !folderView || (folderView === UNFILED ? !x.folder : x.folder === folderView);
 const cleanFolder = x => String(x || "").toLowerCase().replace(/[^a-z0-9 _-]/g, "").trim().replace(/\s+/g, "-").slice(0, 20);
 function splitFolder(arg) {   // "work: finish report" -> folder "work" (must start with a letter, so 9:30 and links don't count)
   const m = String(arg || "").match(/^([a-z][a-z0-9 _-]{0,19}?)\s*:\s*(\S[\s\S]*)$/i);
@@ -766,7 +768,7 @@ async function hereNow() {
 const twitchLogin = () => sb.auth.signInWithOAuth({ provider: "twitch", options: { redirectTo: location.origin + location.pathname, scopes: "chat:read chat:edit" } });
 /* ---------- what you can do ---------- */
 function addTasks(text) {
-  const fsp = splitFolder(text), folder = fsp.folder || folderView || "";   // typed "work: ..." or the folder you're looking at
+  const fsp = splitFolder(text), folder = fsp.folder || (folderView === UNFILED ? "" : folderView) || "";   // typed "work: ..." or the folder you're looking at (unfiled adds with no folder)
   const items = (fsp.folder ? fsp.rest : text).split(";").map(x => x.trim()).filter(Boolean).map(x => x.slice(0, 200));
   if (!items.length) return;
   mutate(t => { if (t.length + items.length > MAX_TASKS) { toast(`your list is full (${MAX_TASKS} max)`); return false; }
@@ -834,8 +836,8 @@ function renderInner() {
     return;
   }
   const t = mine.tasks || [], cur = mine.current == null ? -1 : mine.current;
-  if (folderView && !t.some(x => x.folder === folderView)) folderView = "";
-  const rows = t.map((x, i) => (folderView && x.folder !== folderView) ? "" : editing === i
+  if (folderView && !t.some(inView)) folderView = "";   // that folder (or unfiled) is empty now: back to all
+  const rows = t.map((x, i) => !inView(x) ? "" : editing === i
     ? `<li><span class="no">${i + 1}</span><input class="edit" id="editBox" value="${esc(x.text)}" maxlength="200"><button class="btn" data-a="save" data-i="${i}">save</button></li>`
     : `<li class="${x.done ? "done" : ""} ${cur === i ? "focus" : ""} ${x.urgent && !x.done ? "urgent" : ""}"><span class="no">${i + 1}</span>
         <button class="chk" data-a="done" data-i="${i}" aria-label="${x.done ? "mark not done" : "mark done"}">${x.done ? "✓" : ""}</button>
@@ -844,13 +846,13 @@ function renderInner() {
         ${x.done ? "" : `<button class="btn u ${x.urgent ? "on" : ""}" data-a="urgent" data-i="${i}" title="${x.urgent ? "not urgent" : "mark urgent"}" aria-label="${x.urgent ? "not urgent" : "mark urgent"}">❗</button><button class="btn f" data-a="focus" data-i="${i}">${cur === i ? "unfocus" : "focus"}</button>`}
         ${x.folder ? "" : `<button class="btn f" data-a="folder" data-i="${i}" title="put in a folder" aria-label="put in a folder">📁</button>`}<button class="btn x" data-a="del" data-i="${i}" aria-label="delete">×</button></li>`).join("");
   const fl = foldersOfList(t);
-  const folderBar = fl.length ? `<div class="folders"><button class="fchip ${folderView ? "" : "on"}" data-f="">all</button>${fl.map(f => `<button class="fchip ${folderView === f ? "on" : ""}" data-f="${esc(f)}">📁 ${esc(f)} <b>${t.filter(x => x.folder === f && !x.done).length}</b></button>`).join("")}</div>` : "";
+  const folderBar = fl.length ? `<div class="folders"><button class="fchip ${folderView ? "" : "on"}" data-f="">all</button>${fl.map(f => `<button class="fchip ${folderView === f ? "on" : ""}" data-f="${esc(f)}">📁 ${esc(f)} <b>${t.filter(x => x.folder === f && !x.done).length}</b></button>`).join("")}${t.some(x => !x.folder) ? `<button class="fchip ${folderView === UNFILED ? "on" : ""}" data-f="${UNFILED}">unfiled <b>${t.filter(x => !x.folder && !x.done).length}</b></button>` : ""}</div>` : "";
   app.innerHTML = `<div class="card ticket"><span class="clip"></span><div class="paper">
       <div class="head"><span class="nm">${esc(mine.display || mine.login)}</span><span class="pill">✓ ${pearlsOf(mine)} today</span>
         ${(() => { const left = t.filter(x => !x.done).length; return t.length ? `<span class="pill pink">${left ? `${left} ${left === 1 ? "task" : "tasks"} remaining` : "all done ✨"}</span>` : ""; })()}<button class="out" id="out">log out</button></div>
       ${folderBar}<ol>${rows || `<div class="empty">your list is empty. add your first task below ♡</div>`}</ol>
       ${t.some(x => x.done) ? `<div class="cleardone"><button class="soft" id="clearDone">✨ clear done (${t.filter(x => x.done).length})</button></div>` : ""}
-      <form class="add" id="addForm"><input id="newTask" placeholder="${folderView ? `add to ${esc(folderView)} (use ; for several)` : "add a task (use ; for several, work: for a folder)"}" maxlength="400" autocomplete="off"><button class="big">add</button></form>
+      <form class="add" id="addForm"><input id="newTask" placeholder="${folderView === UNFILED ? "add a task with no folder (use ; for several)" : folderView ? `add to ${esc(folderView)} (use ; for several)` : "add a task (use ; for several, work: for a folder)"}" maxlength="400" autocomplete="off"><button class="big">add</button></form>
       <p class="hint">tap a task to rename it · ❗ marks it urgent · 📁 puts it in a folder · tap the circle when it's done · your ticket in the cafe updates within a few seconds</p>
     </div></div>`;
   app.insertAdjacentHTML("beforeend", repeatsHTML());
