@@ -300,7 +300,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/26 a</div>
+<div id="ver">cafe website · version 11/26 b</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -349,8 +349,8 @@ let fwDirty = false;
 const FWR = {};   // each task's focus as this place last saw it
 // shared timers: each task carries "time so far | started at | last changed", so every overlay and the website show the same time
 function ftTick(t, run, now){ if (run && !t.fat) { t.fat = now; t.fup = now; return true; } if (!run && t.fat) { t.fms = (t.fms || 0) + Math.max(0, now - t.fat); t.fat = 0; t.fup = now; return true; } return false; }
-const ftEnc = (t) => (t && t.fup) ? Math.round(t.fms || 0) + '|' + Math.round(t.fat || 0) + '|' + Math.round(t.fup) : '';
-function ftMerge(t, x){ const m = /^(\d+)\|(\d+)\|(\d+)$/.exec(String(x || '')); if (t && m && +m[3] > (t.fup || 0)) { t.fms = +m[1]; t.fat = +m[2]; t.fup = +m[3]; return true; } return false; }
+const ftEnc = (t) => (t && t.fup) ? Math.round(t.fms || 0) + '|' + Math.round(t.fat || 0) + '|' + Math.round(t.fup) + (t.fdn ? '|d' : '') : '';   // '|d': this round of a repeating task is finished
+function ftMerge(t, x){ const m = /^(\d+)\|(\d+)\|(\d+)(\|d)?$/.exec(String(x || '')); if (t && m && +m[3] > (t.fup || 0)) { t.fms = +m[1]; t.fat = +m[2]; t.fup = +m[3]; if (m[4]) t.fdn = 1; else delete t.fdn; return true; } return false; }
 const fwKey = (login, text) => String(login) + '|' + String(text || '').slice(0, 90).toLowerCase().replace(/\s+/g, ' ').trim();
 const fwFmt = (ms) => { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(x).padStart(2, '0'); };
 const fwWords = (ms) => { const m = Math.floor(ms / 60000), h = Math.floor(m / 60); return h ? h + 'h ' + (m % 60) + 'm' : m ? m + 'm' : Math.floor(ms / 1000) + 's'; };
@@ -363,6 +363,10 @@ function fwSync(){   // every second: run or pause each task's stopwatch to matc
   ((mine && Array.isArray(mine.tasks)) ? mine.tasks.map((t, i) => ({login: mine.login, text: t.text, focus: i === (mine.current == null ? -1 : mine.current), done: !!t.done, obj: t})) : []).forEach(({login, text, focus, done, obj}) => {
     const k = fwKey(login, text), run = !!focus && !done; live[k] = 1;
     if (obj) {   // the timer lives on the task, which syncs everywhere
+      if (obj.daily || obj.repeat) {   // repeating tasks: a finished round is remembered, and the next round starts from 0
+        if (done && !obj.fdn) { if (obj.fat) { obj.fms = (obj.fms || 0) + Math.max(0, now - obj.fat); obj.fat = 0; } obj.fdn = 1; obj.fup = now; try { (() => { if (!mine) return; const want = mine.tasks.map((t) => ({text: t.text, fms: t.fms, fat: t.fat, fup: t.fup})); mutate((tasks) => { let ch = false; tasks.forEach((t) => { const x = want.find((y) => y.text === t.text); if (x && (x.fup || 0) > (t.fup || 0)) { t.fms = x.fms; t.fat = x.fat; t.fup = x.fup; ch = true; } }); return ch ? undefined : false; }); })(login); } catch (e) {} }
+        else if (!done && obj.fdn) { obj.fms = 0; obj.fat = 0; obj.fup = now; delete obj.fdn; FWR[k] = false; try { (() => { if (!mine) return; const want = mine.tasks.map((t) => ({text: t.text, fms: t.fms, fat: t.fat, fup: t.fup})); mutate((tasks) => { let ch = false; tasks.forEach((t) => { const x = want.find((y) => y.text === t.text); if (x && (x.fup || 0) > (t.fup || 0)) { t.fms = x.fms; t.fat = x.fat; t.fup = x.fup; ch = true; } }); return ch ? undefined : false; }); })(login); } catch (e) {} }
+      }
       const was = obj.fat || 0;
       const prev = FWR[k]; FWR[k] = run;   // only this place's own focus changes start or stop the timer (never undo another stream's)
       const go = run ? (!obj.fat && prev !== true) : (!!obj.fat && (prev === true || done));
