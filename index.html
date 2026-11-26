@@ -300,7 +300,7 @@ main{padding-bottom:110px}
   </div>
   <div class="feet"><i></i><i></i></div>
 </div>
-<div id="ver">cafe website · version 11/26 b</div>
+<div id="ver">cafe website · version 11/26 c</div>
 <div class="chatbox collapsed" id="chatbox">
   <button class="chead" id="chatBtn" aria-expanded="false"><span class="cdot" id="chatDot"></span><span>cafe chat</span> <span class="ctag">twitch chat</span><span class="carrow">▲</span></button>
   <div class="cframe" id="chatFrame">
@@ -370,28 +370,76 @@ function fwSync(){   // every second: run or pause each task's stopwatch to matc
       const was = obj.fat || 0;
       const prev = FWR[k]; FWR[k] = run;   // only this place's own focus changes start or stop the timer (never undo another stream's)
       const go = run ? (!obj.fat && prev !== true) : (!!obj.fat && (prev === true || done));
-      if (go && ftTick(obj, run, now)) { if (!run && was) fwAddDay(login, now - was); try { (() => { if (!mine) return; const want = mine.tasks.map((t) => ({text: t.text, fms: t.fms, fat: t.fat, fup: t.fup})); mutate((tasks) => { let ch = false; tasks.forEach((t) => { const x = want.find((y) => y.text === t.text); if (x && (x.fup || 0) > (t.fup || 0)) { t.fms = x.fms; t.fat = x.fat; t.fup = x.fup; ch = true; } }); return ch ? undefined : false; }); })(login); } catch (e) {} }
+      if (go && ftTick(obj, run, now)) { if (!run && was) { fwAddDay(login, now - was); fsLog(login, k, was, now); } try { (() => { if (!mine) return; const want = mine.tasks.map((t) => ({text: t.text, fms: t.fms, fat: t.fat, fup: t.fup})); mutate((tasks) => { let ch = false; tasks.forEach((t) => { const x = want.find((y) => y.text === t.text); if (x && (x.fup || 0) > (t.fup || 0)) { t.fms = x.fms; t.fat = x.fat; t.fup = x.fup; ch = true; } }); return ch ? undefined : false; }); })(login); } catch (e) {} }
       if (obj.fup || FW.t[k]) { FW.t[k] = {ms: obj.fms || 0, start: obj.fat || 0, seen: now}; fwDirty = true; }
       return;
     }
     let r = FW.t[k]; if (!r && !run) return; if (!r) r = FW.t[k] = {ms: 0, start: 0};
     r.seen = now;
     if (run && !r.start) { r.start = now; fwDirty = true; }
-    if (!run && r.start) { const d = now - r.start; r.ms += d; r.start = 0; fwAddDay(login, d); fwDirty = true; }
+    if (!run && r.start) { const d = now - r.start; r.ms += d; r.start = 0; fwAddDay(login, d); fsLog(login, k, now - d, now); fwDirty = true; }
   });
   Object.keys(FW.t).forEach((k) => { const r = FW.t[k];
-    if (!live[k] && r.start) { const d = now - r.start; r.ms += d; r.start = 0; fwAddDay(k.split('|')[0], d); fwDirty = true; }
+    if (!live[k] && r.start) { const d = now - r.start; r.ms += d; r.start = 0; fwAddDay(k.split('|')[0], d); fsLog(k.split('|')[0], k, now - d, now); fwDirty = true; }
     if (!live[k] && now - (r.seen || 0) > 7 * 864e5) { delete FW.t[k]; fwDirty = true; } });
   document.querySelectorAll('[data-fw]').forEach((el) => { const r = FW.t[el.getAttribute('data-fw')]; if (!r) return;
     const b = el.querySelector('.fwn'), t = fwFmt(r.ms + (r.start ? now - r.start : 0)); if (b && b.textContent !== t) b.textContent = t;
     if (!el.classList.contains('done')) { el.classList.toggle('run', !!r.start); el.classList.toggle('paused', !r.start); } });
   if (fwDirty && now - (FW.saved || 0) > 4000) { FW.saved = now; fwDirty = false; try { localStorage.setItem(FW_KEY, JSON.stringify(FW)); } catch (e) {} }
 }
-function fwToday(login){ fwDayCheck(); const now = Date.now(); let ms = (FW.v[login] || {}).ms || 0;
-  Object.keys(FW.t).forEach((k) => { if (k.split('|')[0] === login && FW.t[k].start) ms += now - FW.t[k].start; }); return ms; }
+/* ---------- focus today, the same everywhere · created and designed by lilmissboba ----------
+   Every finished focus session (task, start, end) is saved once on the shared task network, and "focus today"
+   (the website's pill, the cafe and !myfocus on every overlay) adds up today's sessions from everywhere plus
+   anything focusing right now. Until the network has them (or if it can't be reached), the old count on this
+   device is used, so nothing ever shows less than before. */
+const FS = {by: {}, ok: false, watch: new Set(), q: {}, ds: 0, dsAt: 0, url: 'https://cmbaeoqrjgisyenfbvuu.supabase.co', key: 'sb_publishable_j1KaC2NYpgJ8Kc5La-USQQ_wlb24mSj'};
+const fsHead = () => ({apikey: FS.key, 'Content-Type': 'application/json'});
+const fsK = (k) => String(k || '').split('|').slice(1).join('|').slice(0, 90).toLowerCase().replace(/\s+/g, ' ').trim();
+function fsLog(login, k, start, end) {
+  start = Math.round(Number(start) || 0); end = Math.round(Number(end) || 0); const kk = fsK(k);
+  if (!login || !kk || !(end > start) || end - start > 864e5) return;
+  const list = FS.by[login] = FS.by[login] || []; if (!list.some((x) => x.k === kk && x.s === start)) list.push({k: kk, s: start, e: end});
+  (FS.q[login] = FS.q[login] || []).push({k: kk, s: start, e: end}); clearTimeout(FS.qt); FS.qt = setTimeout(fsFlush, 1500);
+}
+async function fsFlush() {
+  for (const login of Object.keys(FS.q)) { const list = FS.q[login]; if (!list.length) continue; FS.q[login] = [];
+    try { const r = await fetch(FS.url + '/rest/v1/rpc/log_focus_sessions', {method: 'POST', headers: fsHead(), body: JSON.stringify({p_viewer: login, p_sessions: list.slice(0, 40)})}); if (!r.ok) throw 0; }
+    catch (e) { FS.q[login] = list.concat(FS.q[login] || []).slice(-200); } }   // try again later
+}
+async function fsPull() {
+  const ls = [...FS.watch].filter((l) => /^[a-z0-9_]{1,25}$/.test(l)).slice(0, 100); if (!ls.length) return;
+  try {
+    const since = new Date(Date.now() - 30 * 36e5).toISOString();
+    const r = await fetch(FS.url + '/rest/v1/shared_focus_sessions?select=viewer,k,started_at,ended_at&viewer=in.(' + ls.join(',') + ')&ended_at=gt.' + encodeURIComponent(since), {headers: fsHead()});
+    if (!r.ok) return;   // the sessions table isn't set up yet: the old count keeps working
+    const rows = await r.json(), by = {}; ls.forEach((l) => { by[l] = []; });
+    rows.forEach((x) => { (by[x.viewer] = by[x.viewer] || []).push({k: x.k, s: Date.parse(x.started_at), e: Date.parse(x.ended_at)}); });
+    ls.forEach((l) => { const mine = (FS.by[l] || []).filter((x) => !by[l].some((y) => y.k === x.k && y.s === x.s) && Date.now() - x.e < 120000); FS.by[l] = by[l].concat(mine); });   // keep ones just saved here
+    FS.ok = true;
+  } catch (e) {}
+}
+setInterval(() => { fsFlush(); fsPull(); }, 20000); setTimeout(fsPull, 3000);
+function fsDayStart() {   // when "today" started, by this place's own clock (the same day it already uses for the daily total)
+  const now = Date.now(); if (FS.ds && now - FS.dsAt < 60000) return FS.ds;
+  const RD = Date, keyAt = (ms) => { class D extends RD { constructor(...a) { if (a.length) super(...a); else super(ms); } static now() { return ms; } }; globalThis.Date = D; try { return String((() => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Singapore", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()))()); } catch (e) { return ''; } finally { globalThis.Date = RD; } };
+  const k = keyAt(now); let lo = now - 30 * 36e5, hi = now;
+  if (!k || keyAt(lo) === k) FS.ds = now - 864e5; else { while (hi - lo > 1000) { const mid = Math.floor((lo + hi) / 2); if (keyAt(mid) === k) hi = mid; else lo = mid; } FS.ds = hi; }
+  FS.dsAt = now; return FS.ds;
+}
+function fsToday(login, runningStarts) {   // today's shared sessions plus anything running now; null until the network has answered
+  if (!FS.watch.has(login)) { FS.watch.add(login); clearTimeout(FS.pt); FS.pt = setTimeout(fsPull, 300); }
+  if (!FS.ok) return null;
+  const now = Date.now(), d0 = fsDayStart(); let ms = 0;
+  (FS.by[login] || []).forEach((x) => { ms += Math.max(0, Math.min(x.e, now) - Math.max(x.s, d0)); });
+  (runningStarts || []).forEach((s) => { ms += Math.max(0, now - Math.max(s, d0)); });
+  return ms;
+}
+function fwToday(login){ fwDayCheck(); const now = Date.now(); let ms = (FW.v[login] || {}).ms || 0; const run = [];
+  Object.keys(FW.t).forEach((k) => { if (k.split('|')[0] === login && FW.t[k].start) { ms += now - FW.t[k].start; run.push(FW.t[k].start); } });
+  const shared = fsToday(login, run); return shared == null ? ms : Math.max(shared, 0); }   // the same total everywhere · created and designed by lilmissboba
 function fwTotal(login, text){ const r = FW.t[fwKey(login, text)]; return r ? r.ms + (r.start ? Date.now() - r.start : 0) : 0; }
 const FW_ICON = '<svg class="fwi" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="9" r="5.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6.4 1.9h3.2M12.3 4.4l1-1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path class="fwh" d="M8 9V5.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
-function fwTag(login, text, running, done){ const k = fwKey(login, text); let r = FW.t[k]; if (!r && !running) return ''; if (!r) r = {ms: 0, start: 0};
+function fwTag(login, text, running, done){ if (typeof FS !== "undefined" && !FS.watch.has(login)) { FS.watch.add(login); clearTimeout(FS.pt); FS.pt = setTimeout(fsPull, 800); } /*fs-watch*/ const k = fwKey(login, text); let r = FW.t[k]; if (!r && !running) return ''; if (!r) r = {ms: 0, start: 0};
   const state = done ? 'done' : (running || r.start) ? 'run' : 'paused';
   return '<i class="fwt ' + state + '" data-fw="' + k.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '">' + FW_ICON + '<i class="fwn">' + fwFmt(r.ms + (r.start ? Date.now() - r.start : 0)) + '</i></i>'; }
 setInterval(() => { try { fwSync(); } catch (e) {} }, 250);
